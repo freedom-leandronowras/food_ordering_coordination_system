@@ -3,7 +3,7 @@
 
 // - [ ] dto json for response
 
-package main
+package domain
 
 import (
 	"time"

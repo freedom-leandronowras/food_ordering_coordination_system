@@ -1,39 +1,44 @@
 package main
 
-/*
-1. fazer events
-2. go channels? testar?
-3. graphql
-4. go mux endpoint? (by hand)
-*/
-
-/*
-## flow
-1. authenticate
-2. use the returned data to instantiate structs
-3. struct instantiate events
-4. dto for interface
-
-obs: i need to store the event and its status
-*/
-
 import (
-	"fmt"
+	"log"
+	"net/http"
+	"os"
 
-	"github.com/google/uuid"
+	"food_ordering_coordination_system/graph"
+
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
+const defaultPort = "8080"
+
 func main() {
-	fmt.Println("oi")
-}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
 
-type FoodItemDTO struct {
-	ID       uuid.UUID `json:"id"`
-	Quantity int       `json:"quantity"`
-	Price    float64   `json:"price"`
-}
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
 
-type FoodOrderPlacedDTO struct {
-	Items         []FoodItemDTO `json:"items"`
-	DeliveryNotes string        `json:"delivery_notes"`
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+
+	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+
+	srv.Use(extension.Introspection{})
+	srv.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New[string](100),
+	})
+
+	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	http.Handle("/query", srv)
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -1,0 +1,35 @@
+type FoodOrder {
+  id: ID!
+  memberId: ID!
+  items: [FoodItem!]!
+  status: String!
+  totalPrice: Float!
+  deliveryNotes: String
+}
+
+type FoodItem {
+  id: ID!
+  name: String!
+  quantity: Int!
+  price: Float!
+}
+
+type Query {
+  orders: [FoodOrder!]!
+}
+
+input NewOrder {
+  memberId: ID!
+  items: [NewItem!]!
+  deliveryNotes: String
+}
+
+input NewItem {
+  name: String!
+  quantity: Int!
+  price: Float!
+}
+
+type Mutation {
+  createOrder(input: NewOrder!): FoodOrder!
+}
