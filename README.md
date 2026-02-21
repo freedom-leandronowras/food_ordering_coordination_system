@@ -9,6 +9,12 @@ should it be a system to make orders or to setup another system that make orders
 
 - Features
     - order food
+    - more than one item a time
+    - managers can:
+        - add more credits to members
+        - create new food services
+        - see dashboard 
+
 
 
 ## Assumptions
@@ -16,17 +22,29 @@ should it be a system to make orders or to setup another system that make orders
     - so i wont touch it for now
 
 - the data of the external system is accurated
+- external systems always have unique id of entities
+
 
 - if an external system replies with 200 code, the order is confirmed
+
+- system is always available when using this software
+    - too much?
+
+- no limit to order as long as its available?
+
+
 
 ### Events
 
 ### Domain
 - 
 
-
-
 ## Approach
+- every member has 100 credits per month
+
+- time related Persistance are made in the event struct
+    - createdAt time.Time
+
 - [ ] is it a event driven architecture?
 
 - It focus on coordenation, not external services
@@ -74,6 +92,8 @@ should it be a system to make orders or to setup another system that make orders
 
 ---
 # What you’d do next with more time
+- payment system for credits
+
 - queue instead of lock?
 - resilience queue and microservices patterns
 
@@ -85,6 +105,8 @@ should it be a system to make orders or to setup another system that make orders
 - AI integration with mira vision
 
 
+- events for rbac and member managament
+- Currency conversion
 
 ---
 # Future Functionalities
@@ -97,6 +119,15 @@ Please describe:
 
 
 - uber eats integration
+
+- separate between type of meal:
+    - lunch, snacks, meal
+
+- analysis for cost optimzation
+
+- events for RBAC
+
+- carrinho to save order?
 
 ---
 # Notion
