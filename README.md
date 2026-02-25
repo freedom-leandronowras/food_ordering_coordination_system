@@ -4,6 +4,10 @@
 - Copy `.env.example` to `.env.local`.
 - Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` with values from Clerk Dashboard.
 - Run `pnpm dev` and access `/`. Unauthenticated users are redirected to `/auth`.
+- `pnpm dev` and `pnpm dev:vc` now start the UI, the Go API (`api/`), and a vendor API simulator.
+- The frontend communicates only with `NEXT_PUBLIC_API_BASE_URL`; external vendor calls are handled by `api/`.
+- Backend required env vars are validated by `api/config.go`.
+- Frontend missing env vars are logged with `pino` in the browser console.
 
 For a office setting:
 This is a system for coordinating food orders to solve the problem of:

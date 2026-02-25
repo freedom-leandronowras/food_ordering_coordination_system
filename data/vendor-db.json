@@ -1,0 +1,33 @@
+{
+  "menu": [
+    {
+      "id": "f0000001-aaaa-4000-a000-000000000001",
+      "name": "Margherita",
+      "description": "San Marzano tomato, mozzarella di bufala, fresh basil",
+      "price": 12.5,
+      "available": true
+    },
+    {
+      "id": "f0000001-aaaa-4000-a000-000000000002",
+      "name": "Diavola",
+      "description": "Spicy salami, roasted peppers, chilli oil",
+      "price": 14,
+      "available": true
+    },
+    {
+      "id": "f0000001-aaaa-4000-a000-000000000003",
+      "name": "Quattro Formaggi",
+      "description": "Mozzarella, gorgonzola, parmigiano, fontina",
+      "price": 15.5,
+      "available": true
+    },
+    {
+      "id": "f0000001-aaaa-4000-a000-000000000004",
+      "name": "Capricciosa",
+      "description": "Artichoke, ham, mushrooms, olives",
+      "price": 16,
+      "available": false
+    }
+  ],
+  "orders": []
+}

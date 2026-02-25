@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -43,7 +42,7 @@ func main() {
 		)
 	}()
 
-	aggregator := buildAggregator()
+	aggregator := buildAggregator(cfg.VendorURLs)
 
 	service := domain.NewFoodOrderingService(repo, repo, repo)
 	router := httpapi.NewFoodOrderingRouter(
@@ -55,10 +54,25 @@ func main() {
 		cfg.Port,
 	)
 	if err := http.ListenAndServe(
-		":"+cfg.Port, router,
+		":"+cfg.Port, withCORS(router),
 	); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // buildAggregator creates the fan-in/fan-out aggregator and registers vendor
@@ -67,14 +81,9 @@ func main() {
 // Set VENDOR_URLS to a comma-separated list of id=name=url triples:
 //
 //	VENDOR_URLS=pizza=Pizza Place=http://localhost:4001,sushi=Sushi Bar=http://localhost:4002
-//
-// When VENDOR_URLS is empty the aggregator starts with no adapters and the
-// menu/vendor endpoints return empty arrays.
-func buildAggregator() *integration.Aggregator {
+func buildAggregator(raw string) *integration.Aggregator {
 	agg := integration.NewAggregator()
-
-	raw := os.Getenv("VENDOR_URLS")
-	if raw == "" {
+	if strings.TrimSpace(raw) == "" {
 		return agg
 	}
 

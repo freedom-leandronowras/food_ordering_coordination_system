@@ -1,0 +1,135 @@
+{
+  "members": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "name": "Sarah Miller",
+      "role": "MEMBER"
+    }
+  ],
+  "credits": [
+    {
+      "id": "credit-11111111",
+      "member_id": "11111111-1111-4111-8111-111111111111",
+      "amount": 24
+    }
+  ],
+  "menus": [
+    {
+      "service_id": "a1b2c3d4-1111-4000-a000-000000000001",
+      "service_name": "Bella Napoli Pizzeria",
+      "items": [
+        {
+          "id": "f0000001-aaaa-4000-a000-000000000001",
+          "name": "Margherita",
+          "description": "San Marzano tomato, mozzarella di bufala, fresh basil",
+          "price": 12.5,
+          "available": true
+        },
+        {
+          "id": "f0000001-aaaa-4000-a000-000000000002",
+          "name": "Diavola",
+          "description": "Spicy salami, roasted peppers, chilli oil",
+          "price": 14,
+          "available": true
+        },
+        {
+          "id": "f0000001-aaaa-4000-a000-000000000003",
+          "name": "Quattro Formaggi",
+          "description": "Mozzarella, gorgonzola, parmigiano, fontina",
+          "price": 15.5,
+          "available": true
+        },
+        {
+          "id": "f0000001-aaaa-4000-a000-000000000004",
+          "name": "Capricciosa",
+          "description": "Artichoke, ham, mushrooms, olives",
+          "price": 16,
+          "available": false
+        }
+      ]
+    },
+    {
+      "service_id": "a1b2c3d4-2222-4000-a000-000000000002",
+      "service_name": "Sakura Sushi Bar",
+      "items": [
+        {
+          "id": "f0000002-bbbb-4000-a000-000000000001",
+          "name": "Salmon Nigiri (2pc)",
+          "description": "Fresh Atlantic salmon over seasoned rice",
+          "price": 8,
+          "available": true
+        },
+        {
+          "id": "f0000002-bbbb-4000-a000-000000000002",
+          "name": "Dragon Roll (8pc)",
+          "description": "Shrimp tempura, avocado, eel sauce, tobiko",
+          "price": 16,
+          "available": true
+        },
+        {
+          "id": "f0000002-bbbb-4000-a000-000000000003",
+          "name": "Spicy Tuna Roll (6pc)",
+          "description": "Tuna, spicy mayo, cucumber, sesame",
+          "price": 13.5,
+          "available": true
+        },
+        {
+          "id": "f0000002-bbbb-4000-a000-000000000004",
+          "name": "Sashimi Platter",
+          "description": "Chef's selection of 12 slices: salmon, tuna, yellowtail",
+          "price": 28,
+          "available": true
+        },
+        {
+          "id": "f0000002-bbbb-4000-a000-000000000005",
+          "name": "Miso Soup",
+          "description": "Traditional dashi broth with tofu, wakame, scallion",
+          "price": 4.5,
+          "available": true
+        }
+      ]
+    },
+    {
+      "service_id": "a1b2c3d4-3333-4000-a000-000000000003",
+      "service_name": "El Fuego Taco Truck",
+      "items": [
+        {
+          "id": "f0000003-cccc-4000-a000-000000000001",
+          "name": "Al Pastor Taco",
+          "description": "Marinated pork, pineapple, cilantro, onion",
+          "price": 4.5,
+          "available": true
+        },
+        {
+          "id": "f0000003-cccc-4000-a000-000000000002",
+          "name": "Carnitas Burrito",
+          "description": "Slow-cooked pork, rice, beans, cheese, salsa verde",
+          "price": 11,
+          "available": true
+        },
+        {
+          "id": "f0000003-cccc-4000-a000-000000000003",
+          "name": "Chicken Quesadilla",
+          "description": "Grilled chicken, three-cheese blend, pico de gallo",
+          "price": 9.5,
+          "available": true
+        },
+        {
+          "id": "f0000003-cccc-4000-a000-000000000004",
+          "name": "Churros (3pc)",
+          "description": "Cinnamon sugar, chocolate dipping sauce",
+          "price": 5,
+          "available": false
+        },
+        {
+          "id": "f0000003-cccc-4000-a000-000000000005",
+          "name": "Horchata",
+          "description": "Traditional rice and cinnamon drink",
+          "price": 3.5,
+          "available": true
+        }
+      ]
+    }
+  ],
+  "orders": []
+}
