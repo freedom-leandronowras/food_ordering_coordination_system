@@ -11,6 +11,7 @@ type EventType string
 const (
 	FoodOrderCreatedEvt   EventType = "food-order.created.v1"
 	FoodOrderSubmittedEvt EventType = "food-order.submitted.v1"
+	CreditsGrantedEvt     EventType = "credits.granted.v1"
 )
 
 type Event struct {
@@ -30,4 +31,10 @@ type FoodOrderPlaced struct {
 	TotalPrice    float64
 	DeliveryNotes string
 	Status        OrderStatus
+}
+
+type CreditsGranted struct {
+	MemberID   uuid.UUID
+	Amount     float64
+	NewBalance float64
 }

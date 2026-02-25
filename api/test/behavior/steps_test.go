@@ -87,8 +87,8 @@ func (s *scenarioState) reset() error {
 		return err
 	}
 
-	service := domain.NewFoodOrderingService(s.repo, s.repo)
-	s.router = httpapi.NewFoodOrderingRouter(service)
+	service := domain.NewFoodOrderingService(s.repo, s.repo, s.repo)
+	s.router = httpapi.NewFoodOrderingRouter(service, nil)
 
 	s.memberID = uuid.Nil
 	s.response = nil

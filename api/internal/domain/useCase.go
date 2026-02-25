@@ -10,6 +10,8 @@ import (
 var (
 	ErrInvalidOrder        = errors.New("invalid order")
 	ErrInsufficientCredits = errors.New("insufficient credits")
+	ErrInvalidAmount       = errors.New("invalid amount")
+	ErrCreditsExceedCap    = errors.New("credits would exceed cap")
 )
 
 type PlaceOrderItem struct {
@@ -37,6 +39,10 @@ type CreditRepository interface {
 type OrderEventRepository interface {
 	Save(order FoodOrder) error
 	Append(event Event) error
+}
+
+type OrderReader interface {
+	OrdersByMember(memberID uuid.UUID) ([]FoodOrder, error)
 }
 
 type PlaceOrderUseCase struct {
@@ -132,4 +138,75 @@ func NewGetCreditsUseCase(creditRepo CreditRepository) *GetCreditsUseCase {
 
 func (u *GetCreditsUseCase) Execute(memberID uuid.UUID) (float64, bool, error) {
 	return u.creditRepo.Get(memberID)
+}
+
+// ---------------------------------------------------------------------------
+// AddCreditsUseCase — managers grant credits to a member
+// ---------------------------------------------------------------------------
+
+type AddCreditsUseCase struct {
+	creditRepo     CreditRepository
+	orderEventRepo OrderEventRepository
+	now            func() time.Time
+}
+
+func NewAddCreditsUseCase(creditRepo CreditRepository, orderEventRepo OrderEventRepository) *AddCreditsUseCase {
+	return &AddCreditsUseCase{
+		creditRepo:     creditRepo,
+		orderEventRepo: orderEventRepo,
+		now:            time.Now,
+	}
+}
+
+func (u *AddCreditsUseCase) Execute(memberID uuid.UUID, amount float64) (float64, error) {
+	if memberID == uuid.Nil || amount <= 0 {
+		return 0, ErrInvalidAmount
+	}
+
+	current, _, err := u.creditRepo.Get(memberID)
+	if err != nil {
+		return 0, err
+	}
+
+	newBalance := current + amount
+	if newBalance > MaxMemberCredits {
+		return 0, ErrCreditsExceedCap
+	}
+
+	if err := u.creditRepo.Set(memberID, newBalance); err != nil {
+		return 0, err
+	}
+
+	event := Event{
+		ID:          uuid.New(),
+		Type:        CreditsGrantedEvt,
+		AggregateID: memberID,
+		OccurredAt:  u.now().UTC(),
+		Payload: CreditsGranted{
+			MemberID:   memberID,
+			Amount:     amount,
+			NewBalance: newBalance,
+		},
+	}
+	if err := u.orderEventRepo.Append(event); err != nil {
+		return 0, err
+	}
+
+	return newBalance, nil
+}
+
+// ---------------------------------------------------------------------------
+// GetMemberOrdersUseCase — retrieve a member's order history
+// ---------------------------------------------------------------------------
+
+type GetMemberOrdersUseCase struct {
+	orderReader OrderReader
+}
+
+func NewGetMemberOrdersUseCase(orderReader OrderReader) *GetMemberOrdersUseCase {
+	return &GetMemberOrdersUseCase{orderReader: orderReader}
+}
+
+func (u *GetMemberOrdersUseCase) Execute(memberID uuid.UUID) ([]FoodOrder, error) {
+	return u.orderReader.OrdersByMember(memberID)
 }

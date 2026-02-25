@@ -116,6 +116,67 @@ func (r *MongoRepository) Save(order domain.FoodOrder) error {
 	return err
 }
 
+func (r *MongoRepository) OrdersByMember(memberID uuid.UUID) ([]domain.FoodOrder, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := r.db.Collection(ordersCollection).Find(
+		ctx,
+		bson.M{"member_id": memberID.String()},
+		options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("find orders: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var orders []domain.FoodOrder
+	for cursor.Next(ctx) {
+		var doc orderDocument
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, fmt.Errorf("decode order: %w", err)
+		}
+		id, _ := uuid.Parse(doc.ID)
+		memID, _ := uuid.Parse(doc.MemberID)
+
+		items := make([]domain.FoodItem, 0, len(doc.Items))
+		for _, di := range doc.Items {
+			itemID, _ := uuid.Parse(di.ID)
+			items = append(items, domain.FoodItem{
+				ID:       itemID,
+				Name:     di.Name,
+				Quantity: di.Quantity,
+				Price:    di.Price,
+			})
+		}
+		orders = append(orders, domain.FoodOrder{
+			ID:            id,
+			MemberID:      memID,
+			Items:         items,
+			Status:        domain.OrderStatus(doc.Status),
+			TotalPrice:    doc.TotalPrice,
+			DeliveryNotes: doc.DeliveryNotes,
+		})
+	}
+	return orders, cursor.Err()
+}
+
+type orderDocument struct {
+	ID            string              `bson:"id"`
+	MemberID      string              `bson:"member_id"`
+	Status        string              `bson:"status"`
+	TotalPrice    float64             `bson:"total_price"`
+	DeliveryNotes string              `bson:"delivery_notes"`
+	Items         []orderItemDocument `bson:"items"`
+}
+
+type orderItemDocument struct {
+	ID       string  `bson:"id"`
+	Name     string  `bson:"name"`
+	Quantity int     `bson:"quantity"`
+	Price    float64 `bson:"price"`
+}
+
 // EventsByAggregate returns every event for the given aggregate, sorted by
 // occurred_at ascending.  This is the fundamental read path for event
 // sourcing: replay this slice to rebuild the aggregate's current state.

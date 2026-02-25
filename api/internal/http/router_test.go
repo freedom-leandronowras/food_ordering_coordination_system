@@ -286,8 +286,8 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatalf("ensure schema: %v", err)
 	}
 
-	service := domain.NewFoodOrderingService(repo, repo)
-	router := httpapi.NewFoodOrderingRouter(service)
+	service := domain.NewFoodOrderingService(repo, repo, repo)
+	router := httpapi.NewFoodOrderingRouter(service, nil)
 
 	return &testEnv{
 		container: container,
