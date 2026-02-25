@@ -19,6 +19,9 @@ const authSectionsData: AuthSectionsData = {
   form: {
     signInLabel: "Sign in",
     signUpLabel: "Sign up",
+    allowedDomainsHint: "Sign-ups are restricted to:",
+    domainBlockedMessage:
+      "Your account email domain is not allowed for this environment.",
   },
 };
 

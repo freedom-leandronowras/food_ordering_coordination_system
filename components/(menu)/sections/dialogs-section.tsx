@@ -37,6 +37,7 @@ export function DialogsSection({ data }: DialogsSectionProps) {
     placeOrder,
     placingOrder,
     memberId,
+    isManager,
     grantAmount,
     setGrantAmount,
     grantReason,
@@ -194,7 +195,7 @@ export function DialogsSection({ data }: DialogsSectionProps) {
             </DialogClose>
             <Button
               type="button"
-              disabled={grantingCredits || !memberId}
+              disabled={grantingCredits || !memberId || !isManager}
               onClick={async () => {
                 const ok = await grantCredits();
                 if (ok) {

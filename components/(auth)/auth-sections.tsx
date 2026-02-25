@@ -6,6 +6,7 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { parseAllowedEmailDomains } from "@/lib/auth-policy";
 import { cn } from "@/lib/utils";
 
 export type AuthSectionsData = {
@@ -23,6 +24,8 @@ export type AuthSectionsData = {
   form: {
     signInLabel: string;
     signUpLabel: string;
+    allowedDomainsHint: string;
+    domainBlockedMessage: string;
   };
 };
 
@@ -30,6 +33,8 @@ type AuthSectionsContextValue = {
   mode: "sign-in" | "sign-up";
   setMode: (mode: "sign-in" | "sign-up") => void;
   redirectUrl: string;
+  allowedDomains: string[];
+  authErrorMessage: string;
 };
 
 const AuthSectionsContext = createContext<AuthSectionsContextValue | null>(null);
@@ -41,6 +46,23 @@ function getRedirectUrl(rawRedirect: string | null) {
   return rawRedirect;
 }
 
+function getAuthErrorMessage(
+  rawError: string | null,
+  allowedDomains: string[],
+  blockedDomainMessage: string,
+) {
+  if (rawError !== "EMAIL_DOMAIN_NOT_ALLOWED") {
+    return "";
+  }
+
+  if (allowedDomains.length === 0) {
+    return blockedDomainMessage;
+  }
+
+  const domainsText = allowedDomains.map((domain) => `@${domain}`).join(", ");
+  return `${blockedDomainMessage} Allowed domains: ${domainsText}.`;
+}
+
 function useAuthSectionsContext() {
   const context = useContext(AuthSectionsContext);
   if (!context) {
@@ -49,13 +71,25 @@ function useAuthSectionsContext() {
   return context;
 }
 
-function AuthSectionsProvider({ children }: { children: ReactNode }) {
+function AuthSectionsProvider({
+  children,
+  data,
+}: {
+  children: ReactNode;
+  data: AuthSectionsData;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const mode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
   const redirectUrl = getRedirectUrl(searchParams.get("redirect_url"));
+  const allowedDomains = parseAllowedEmailDomains(process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS);
+  const authErrorMessage = getAuthErrorMessage(
+    searchParams.get("error"),
+    allowedDomains,
+    data.form.domainBlockedMessage,
+  );
 
   const setMode = (nextMode: "sign-in" | "sign-up") => {
     const params = new URLSearchParams(searchParams.toString());
@@ -69,7 +103,7 @@ function AuthSectionsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthSectionsContext.Provider value={{ mode, setMode, redirectUrl }}>
+    <AuthSectionsContext.Provider value={{ mode, setMode, redirectUrl, allowedDomains, authErrorMessage }}>
       {children}
     </AuthSectionsContext.Provider>
   );
@@ -103,7 +137,7 @@ function AuthHeroSection({ data }: { data: AuthSectionsData }) {
 }
 
 function AuthFormSection({ data }: { data: AuthSectionsData }) {
-  const { mode, setMode, redirectUrl } = useAuthSectionsContext();
+  const { mode, setMode, redirectUrl, allowedDomains, authErrorMessage } = useAuthSectionsContext();
 
   const clerkAppearance = {
     elements: {
@@ -156,6 +190,18 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
         </div>
 
         <Card className="rounded-3xl border-[#dce9e5] bg-[#fbfdfc] p-5">
+          {authErrorMessage ? (
+            <Card className="mb-4 rounded-2xl border-[#f0d1cf] bg-[#fff6f5] p-3 text-sm text-[#8f352c]">
+              {authErrorMessage}
+            </Card>
+          ) : null}
+
+          {mode === "sign-up" && allowedDomains.length > 0 ? (
+            <Card className="mb-4 rounded-2xl border-[#dce9e5] bg-[#eef7f4] p-3 text-xs text-[#4e6f66]">
+              {data.form.allowedDomainsHint} {allowedDomains.map((domain) => `@${domain}`).join(", ")}.
+            </Card>
+          ) : null}
+
           {mode === "sign-in" ? (
             <SignIn
               routing="virtual"
@@ -190,7 +236,7 @@ function AuthPageSections({ data }: { data: AuthSectionsData }) {
 
 export function AuthSections({ data }: { data: AuthSectionsData }) {
   return (
-    <AuthSectionsProvider>
+    <AuthSectionsProvider data={data}>
       <AuthPageSections data={data} />
     </AuthSectionsProvider>
   );

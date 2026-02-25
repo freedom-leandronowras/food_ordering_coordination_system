@@ -3,11 +3,17 @@
 ## Clerk Auth Setup
 - Copy `.env.example` to `.env.local`.
 - Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` with values from Clerk Dashboard.
+- Optional: set `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS` with a comma-separated list (e.g. `company.com,partner.io`) to enforce domain-restricted access.
 - Run `pnpm dev` and access `/`. Unauthenticated users are redirected to `/auth`.
 - `pnpm dev` and `pnpm dev:vc` now start the UI, the Go API (`api/`), and a vendor API simulator.
 - The frontend communicates only with `NEXT_PUBLIC_API_BASE_URL`; external vendor calls are handled by `api/`.
 - Backend required env vars are validated by `api/config.go`.
 - Frontend missing env vars are logged with `pino` in the browser console.
+
+### Manager domain/member management
+- Manager roles (`HIVE_MANAGER`, `INNOVATION_LEAD`) can switch between **Menu** and **Management** views in the header.
+- The management view allows searching Clerk users by email domain and granting credits to member UUID accounts.
+- For production sign-up enforcement, configure Clerk Dashboard restrictions to allow only your approved email domains.
 
 For a office setting:
 This is a system for coordinating food orders to solve the problem of:
