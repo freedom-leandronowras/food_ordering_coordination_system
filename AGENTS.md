@@ -14,7 +14,7 @@
    - In the cloud VM, start Docker with: `sudo nohup dockerd > /tmp/dockerd.log 2>&1 &`
    - Docker uses `fuse-overlayfs` storage driver and `iptables-legacy` (required for nested containers in Firecracker VMs).
 2. **MongoDB**: `sudo docker run -d --name mongodb -p 27017:27017 mongo:7`
-3. **Go API**: `cd api && PORT=8080 MONGODB_URI=mongodb://localhost:27017 MONGODB_DATABASE=food_ordering go run .`
+3. **Go API**: `cd api && PORT=8080 MONGODB_URI=mongodb://localhost:27017 MONGODB_DATABASE=food_ordering go run ./_local`
 4. **Next.js frontend**: `pnpm dev` (port 3000 by default)
 
 ### Lint / Test / Build

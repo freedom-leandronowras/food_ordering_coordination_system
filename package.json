@@ -7,7 +7,7 @@
     "dev:web": "next dev",
     "dev:vc": "concurrently -k -n vc,api,vendor -c cyan,magenta,yellow \"pnpm dev:vc:web\" \"pnpm api:server\" \"pnpm vendor:server\"",
     "dev:vc:web": "vc dev",
-    "api:server": "cd api && go run .",
+    "api:server": "cd api && go run ./_local",
     "vendor:server": "sh -c 'json-server --watch \"$VENDOR_API_DB_PATH\" --port \"$VENDOR_API_PORT\"'",
     "build": "next build",
     "start": "next start",

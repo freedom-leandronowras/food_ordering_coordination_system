@@ -18,7 +18,7 @@
 
 ### Vercel Go API Function
 - The Go backend can be deployed as a Vercel Serverless Function via `/go-api/*`.
-- Requests to `/go-api/*` are routed to `api/vercel/index.go` (`package handler`), which forwards internally to the existing Go router paths (`/api/*`).
+- Requests to `/go-api/*` are routed to `api/main.go` (`package handler`), which forwards internally to the existing Go router paths (`/api/*`).
 - Keep `MONGODB_URI`, `MONGODB_DATABASE`, and optionally `VENDOR_URLS` configured in Vercel project environment variables.
 
 For a office setting:
