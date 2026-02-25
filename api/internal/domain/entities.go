@@ -1,4 +1,4 @@
-package main
+package domain
 
 import (
 	"github.com/google/uuid"
@@ -7,47 +7,79 @@ import (
 type ManagerType string
 
 const (
-	HiveManager    ManagerType = "HIVE_MANAGER"
-	InnovationLead ManagerType = "INNOVATION_LEAD"
+	HiveManager ManagerType = "HIVE_MANAGER"
 )
 
 type FacilityManager struct {
-	id          uuid.UUID
-	name        string
-	managerType ManagerType
-	email       string
+	ID          uuid.UUID
+	Name        string
+	ManagerType ManagerType
+	Email       string
 }
 
 type Member struct {
-	id    uuid.UUID
-	name  string
-	role  string
-	email string
+	ID      uuid.UUID
+	Name    string
+	Role    string
+	Email   string
+	Credits Credit
 }
 
 type Company struct {
-	id   uuid.UUID
-	name string
+	ID   uuid.UUID
+	Name string
 }
 
+type Vendor struct {
+	ID          uuid.UUID
+	Name        string
+	Description string
+	Active      bool
+}
+
+type Menu struct {
+	ID       uuid.UUID
+	VendorID uuid.UUID
+	Name     string
+	Items    []MenuItem
+	Active   bool
+}
+
+type MenuItem struct {
+	ID          uuid.UUID
+	MenuID      uuid.UUID
+	Name        string
+	Description string
+	Price       float64
+	Available   bool
+}
+
+type OrderStatus string
+
+const (
+	OrderStatusConfirmed OrderStatus = "CONFIRMED"
+)
+
 type FoodOrder struct {
-	id            uuid.UUID
-	memberId      uuid.UUID
-	items         []FoodItem
-	status        string
-	totalPrice    float32
-	deliveryNotes string // example: remove something
+	ID            uuid.UUID
+	MemberID      uuid.UUID
+	Items         []FoodItem
+	Status        OrderStatus
+	TotalPrice    float64
+	DeliveryNotes string
 }
 
 type FoodItem struct {
-	id       uuid.UUID
-	name     string
-	quantity int
-	price    float64
+	ID       uuid.UUID
+	Name     string
+	Quantity int
+	Price    float64
 }
 
-type Credits struct {
-	id       uuid.UUID
-	memberId uuid.UUID
-	amount   float32
+type Credit struct {
+	ID       uuid.UUID
+	MemberID uuid.UUID
+	Amount   float64
 }
+
+const MaxMemberCredits float64 = 1000

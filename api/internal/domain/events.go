@@ -1,9 +1,4 @@
-// should be for requests/orders
-// receive a entity to instate the event
-
-// - [ ] dto json for response
-
-package main
+package domain
 
 import (
 	"time"
@@ -32,7 +27,7 @@ type FoodOrderPlaced struct {
 	OrderID       uuid.UUID
 	MemberID      uuid.UUID
 	Items         []FoodItem
-	TotalPrice    float32
+	TotalPrice    float64
 	DeliveryNotes string
-	Status        string
+	Status        OrderStatus
 }
