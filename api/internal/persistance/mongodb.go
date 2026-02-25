@@ -116,6 +116,61 @@ func (r *MongoRepository) Save(order domain.FoodOrder) error {
 	return err
 }
 
+// EventsByAggregate returns every event for the given aggregate, sorted by
+// occurred_at ascending.  This is the fundamental read path for event
+// sourcing: replay this slice to rebuild the aggregate's current state.
+func (r *MongoRepository) EventsByAggregate(ctx context.Context, aggregateID uuid.UUID) ([]domain.Event, error) {
+	cursor, err := r.db.Collection(eventsCollection).Find(
+		ctx,
+		bson.M{"aggregate_id": aggregateID.String()},
+		options.Find().SetSort(bson.D{{Key: "occurred_at", Value: 1}}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("find events: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var events []domain.Event
+	for cursor.Next(ctx) {
+		var doc eventDocument
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, fmt.Errorf("decode event: %w", err)
+		}
+
+		id, _ := uuid.Parse(doc.ID)
+		aggID, _ := uuid.Parse(doc.AggregateID)
+
+		var correlationID, causationID uuid.UUID
+		if doc.CorrelationID != "" {
+			correlationID, _ = uuid.Parse(doc.CorrelationID)
+		}
+		if doc.CausationID != "" {
+			causationID, _ = uuid.Parse(doc.CausationID)
+		}
+
+		events = append(events, domain.Event{
+			ID:            id,
+			Type:          domain.EventType(doc.Type),
+			AggregateID:   aggID,
+			CorrelationID: correlationID,
+			CausationID:   causationID,
+			OccurredAt:    doc.OccurredAt,
+			Payload:       map[string]any(doc.Payload),
+		})
+	}
+	return events, cursor.Err()
+}
+
+type eventDocument struct {
+	ID            string    `bson:"id"`
+	Type          string    `bson:"type"`
+	AggregateID   string    `bson:"aggregate_id"`
+	CorrelationID string    `bson:"correlation_id"`
+	CausationID   string    `bson:"causation_id"`
+	OccurredAt    time.Time `bson:"occurred_at"`
+	Payload       bson.M    `bson:"payload"`
+}
+
 func (r *MongoRepository) Append(event domain.Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
