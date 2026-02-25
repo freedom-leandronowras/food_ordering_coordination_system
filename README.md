@@ -5,10 +5,17 @@ This is a system for coordinating food orders to solve the problem of:
 Different companies have their innovation departments located in the same physical place, and there are two HIVE managers who make sure everything runs smoothly.
 Currently, there is no  -> coordination <- of food ordering.
 
-should it be a system to make orders or to setup another system that make orders ( i will go with the first one)
+- [ ] should it be a system to make orders or to setup another system that make orders ( i will go with the first one)
 
 - Features
+    - see the menu per vendor
+        - [x] entity for menu and vendor
     - order food
+    - credits
+        - [x] botar alguma limite tipo 1000
+    - RBAC
+        - [x] entity for jwt
+        - [x] entity for roles and permissions?
     - more than one item a time
     - managers can:
         - add more credits to members
@@ -16,6 +23,23 @@ should it be a system to make orders or to setup another system that make orders
         - see dashboard 
 
 
+---
+- [ ] checar se o mongo ta persistindo os events de maneira correta
+
+
+- [ ] use framework for jwt parse in the auth.go
+
+- [ ] user can see only see the data that belongs to him
+- [ ] managers can see data from all users
+
+
+- [ ] revisar user stories
+   - [ ]  add table to test excepetions in invalid order payload
+- [ ] user stories para (ou eh melhor em unit tests?)
+    - [ ] criar para user dashboard
+    - [ ] criar para manager
+
+- [ ] botar camadas para os adapters e coisas q fazer sentindo de acordo com assumptions
 
 ## Assumptions
 - other systems already have their database
@@ -128,6 +152,12 @@ Please describe:
 - events for RBAC
 
 - carrinho to save order?
+
+- favorites 
+
+- quick reorder
+
+- dish of the day
 
 ---
 # Notion
