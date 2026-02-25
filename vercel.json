@@ -6,18 +6,18 @@
       "use": "@vercel/next"
     },
     {
-      "src": "api/vercel.go",
+      "src": "api/vercel/index.go",
       "use": "@vercel/go"
     }
   ],
   "routes": [
     {
       "src": "^/go-api/?$",
-      "dest": "/api/vercel.go"
+      "dest": "/api/vercel/index.go"
     },
     {
       "src": "^/go-api/(.*)$",
-      "dest": "/api/vercel.go?path=/$1"
+      "dest": "/api/vercel/index.go?path=/$1"
     },
     {
       "handle": "filesystem"
