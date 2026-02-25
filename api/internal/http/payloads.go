@@ -29,6 +29,49 @@ type creditsResponse struct {
 	Credits  float64 `json:"credits"`
 }
 
+type grantCreditsRequest struct {
+	Amount float64 `json:"amount"`
+}
+
+type grantCreditsResponse struct {
+	MemberID   string  `json:"member_id"`
+	NewBalance float64 `json:"new_balance"`
+}
+
+type orderResponse struct {
+	OrderID       string             `json:"order_id"`
+	Status        string             `json:"status"`
+	TotalPrice    float64            `json:"total_price"`
+	DeliveryNotes string             `json:"delivery_notes"`
+	Items         []orderItemPayload `json:"items"`
+}
+
+type orderItemPayload struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Quantity int     `json:"quantity"`
+	Price    float64 `json:"price"`
+}
+
+type menuItemResponse struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Available   bool    `json:"available"`
+}
+
+type vendorMenuResponse struct {
+	ServiceID   string             `json:"service_id"`
+	ServiceName string             `json:"service_name"`
+	Items       []menuItemResponse `json:"items"`
+	Error       string             `json:"error,omitempty"`
+}
+
+type vendorResponse struct {
+	ServiceID string `json:"service_id"`
+}
+
 type errorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`

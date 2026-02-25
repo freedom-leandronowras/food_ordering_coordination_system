@@ -1,0 +1,45 @@
+{
+  "vendor": {
+    "id": "a1b2c3d4-3333-4000-a000-000000000003",
+    "name": "El Fuego Taco Truck",
+    "description": "Street-style Mexican food — tacos, burritos, quesadillas"
+  },
+  "menu": [
+    {
+      "id": "f0000003-cccc-4000-a000-000000000001",
+      "name": "Al Pastor Taco",
+      "description": "Marinated pork, pineapple, cilantro, onion",
+      "price": 4.50,
+      "available": true
+    },
+    {
+      "id": "f0000003-cccc-4000-a000-000000000002",
+      "name": "Carnitas Burrito",
+      "description": "Slow-cooked pork, rice, beans, cheese, salsa verde",
+      "price": 11.00,
+      "available": true
+    },
+    {
+      "id": "f0000003-cccc-4000-a000-000000000003",
+      "name": "Chicken Quesadilla",
+      "description": "Grilled chicken, three-cheese blend, pico de gallo",
+      "price": 9.50,
+      "available": true
+    },
+    {
+      "id": "f0000003-cccc-4000-a000-000000000004",
+      "name": "Churros (3pc)",
+      "description": "Cinnamon sugar, chocolate dipping sauce",
+      "price": 5.00,
+      "available": false
+    },
+    {
+      "id": "f0000003-cccc-4000-a000-000000000005",
+      "name": "Horchata",
+      "description": "Traditional rice and cinnamon drink",
+      "price": 3.50,
+      "available": true
+    }
+  ],
+  "orders": []
+}

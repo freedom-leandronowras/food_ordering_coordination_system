@@ -1,0 +1,45 @@
+{
+  "vendor": {
+    "id": "a1b2c3d4-2222-4000-a000-000000000002",
+    "name": "Sakura Sushi Bar",
+    "description": "Premium sushi and sashimi prepared by chef Takeshi"
+  },
+  "menu": [
+    {
+      "id": "f0000002-bbbb-4000-a000-000000000001",
+      "name": "Salmon Nigiri (2pc)",
+      "description": "Fresh Atlantic salmon over seasoned rice",
+      "price": 8.00,
+      "available": true
+    },
+    {
+      "id": "f0000002-bbbb-4000-a000-000000000002",
+      "name": "Dragon Roll (8pc)",
+      "description": "Shrimp tempura, avocado, eel sauce, tobiko",
+      "price": 16.00,
+      "available": true
+    },
+    {
+      "id": "f0000002-bbbb-4000-a000-000000000003",
+      "name": "Spicy Tuna Roll (6pc)",
+      "description": "Tuna, spicy mayo, cucumber, sesame",
+      "price": 13.50,
+      "available": true
+    },
+    {
+      "id": "f0000002-bbbb-4000-a000-000000000004",
+      "name": "Sashimi Platter",
+      "description": "Chef's selection of 12 slices: salmon, tuna, yellowtail",
+      "price": 28.00,
+      "available": true
+    },
+    {
+      "id": "f0000002-bbbb-4000-a000-000000000005",
+      "name": "Miso Soup",
+      "description": "Traditional dashi broth with tofu, wakame, scallion",
+      "price": 4.50,
+      "available": true
+    }
+  ],
+  "orders": []
+}
