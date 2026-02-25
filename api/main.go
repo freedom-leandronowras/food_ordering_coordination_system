@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,24 +17,26 @@ import (
 	"handler/internal/integration"
 	"handler/internal/integration/adapters"
 	persistence "handler/internal/persistance"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type dbConfig struct {
-	uri      string
-	database string
-}
-
 type serverlessConfig struct {
 	vendorURLs string
-	db         dbConfig
+	dbURI      string
+	dbDatabase string
+}
+
+func (c serverlessConfig) hasMongoConfig() bool {
+	return c.dbURI != "" && c.dbDatabase != ""
 }
 
 var (
 	serverlessInitOnce sync.Once
 	serverlessRouter   http.Handler
 	serverlessInitErr  error
+	serverlessClient   *mongo.Client
 )
 
 // Handler is the Vercel entrypoint for the Go API.
@@ -55,17 +58,27 @@ func initializeServerlessRouter() {
 		serverlessInitErr = err
 		return
 	}
+	aggregator := buildAggregator(cfg.vendorURLs)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	var repo serviceRepository
+	switch {
+	case cfg.hasMongoConfig():
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
 
-	repo, _, err := connectMongoRepository(ctx, cfg)
-	if err != nil {
-		serverlessInitErr = fmt.Errorf("connect mongo repository: %w", err)
-		return
+		mongoRepo, mongoClient, connectErr := connectMongoRepository(ctx, cfg)
+		if connectErr != nil {
+			log.Printf("mongo unavailable in serverless runtime, using in-memory fallback: %v", connectErr)
+			repo = newMemoryRepository()
+		} else {
+			serverlessClient = mongoClient
+			repo = mongoRepo
+		}
+	default:
+		log.Printf("MONGODB_URI/MONGODB_DATABASE not set, using in-memory repository fallback")
+		repo = newMemoryRepository()
 	}
 
-	aggregator := buildAggregator(cfg.vendorURLs)
 	service := domain.NewFoodOrderingService(repo, repo, repo)
 	serverlessRouter = withCORS(httpapi.NewFoodOrderingRouter(service, aggregator))
 }
@@ -73,21 +86,12 @@ func initializeServerlessRouter() {
 func loadServerlessConfig() (serverlessConfig, error) {
 	cfg := serverlessConfig{
 		vendorURLs: strings.TrimSpace(os.Getenv("VENDOR_URLS")),
-		db: dbConfig{
-			uri:      strings.TrimSpace(os.Getenv("MONGODB_URI")),
-			database: strings.TrimSpace(os.Getenv("MONGODB_DATABASE")),
-		},
+		dbURI:      strings.TrimSpace(os.Getenv("MONGODB_URI")),
+		dbDatabase: strings.TrimSpace(os.Getenv("MONGODB_DATABASE")),
 	}
 
-	var missing []string
-	if cfg.db.uri == "" {
-		missing = append(missing, "MONGODB_URI")
-	}
-	if cfg.db.database == "" {
-		missing = append(missing, "MONGODB_DATABASE")
-	}
-	if len(missing) > 0 {
-		return serverlessConfig{}, errors.New("missing required environment variables: " + strings.Join(missing, ", "))
+	if (cfg.dbURI == "") != (cfg.dbDatabase == "") {
+		return serverlessConfig{}, errors.New("MONGODB_URI and MONGODB_DATABASE must be set together")
 	}
 
 	if cfg.vendorURLs != "" {
@@ -100,12 +104,12 @@ func loadServerlessConfig() (serverlessConfig, error) {
 }
 
 func connectMongoRepository(ctx context.Context, cfg serverlessConfig) (*persistence.MongoRepository, *mongo.Client, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.db.uri))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.dbURI))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	repo := persistence.NewMongoRepository(client.Database(cfg.db.database))
+	repo := persistence.NewMongoRepository(client.Database(cfg.dbDatabase))
 	if err := repo.EnsureSchema(ctx); err != nil {
 		_ = client.Disconnect(ctx)
 		return nil, nil, err
@@ -219,4 +223,73 @@ func dropPathQueryParam(values url.Values) url.Values {
 		next[key] = copySlice
 	}
 	return next
+}
+
+type serviceRepository interface {
+	domain.CreditRepository
+	domain.OrderEventRepository
+	domain.OrderReader
+}
+
+type memoryRepository struct {
+	mu      sync.RWMutex
+	credits map[uuid.UUID]float64
+	orders  map[uuid.UUID][]domain.FoodOrder
+}
+
+func newMemoryRepository() *memoryRepository {
+	return &memoryRepository{
+		credits: make(map[uuid.UUID]float64),
+		orders:  make(map[uuid.UUID][]domain.FoodOrder),
+	}
+}
+
+func (r *memoryRepository) Get(memberID uuid.UUID) (float64, bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	amount, ok := r.credits[memberID]
+	return amount, ok, nil
+}
+
+func (r *memoryRepository) Set(memberID uuid.UUID, amount float64) error {
+	if amount > domain.MaxMemberCredits {
+		return fmt.Errorf("credits exceed maximum allowed (%v)", domain.MaxMemberCredits)
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.credits[memberID] = amount
+	return nil
+}
+
+func (r *memoryRepository) Save(order domain.FoodOrder) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.orders[order.MemberID] = append(r.orders[order.MemberID], order)
+	return nil
+}
+
+func (r *memoryRepository) Append(event domain.Event) error {
+	_ = event
+	return nil
+}
+
+func (r *memoryRepository) OrdersByMember(memberID uuid.UUID) ([]domain.FoodOrder, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	orders := r.orders[memberID]
+	if len(orders) == 0 {
+		return []domain.FoodOrder{}, nil
+	}
+
+	result := make([]domain.FoodOrder, len(orders))
+	copy(result, orders)
+
+	for left, right := 0, len(result)-1; left < right; left, right = left+1, right-1 {
+		result[left], result[right] = result[right], result[left]
+	}
+
+	return result, nil
 }

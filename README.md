@@ -19,7 +19,8 @@
 ### Vercel Go API Function
 - The Go backend can be deployed as a Vercel Serverless Function via `/go-api/*`.
 - Requests to `/go-api/*` are routed to `api/main.go` (`package handler`), which forwards internally to the existing Go router paths (`/api/*`).
-- Keep `MONGODB_URI`, `MONGODB_DATABASE`, and optionally `VENDOR_URLS` configured in Vercel project environment variables.
+- Set `VENDOR_URLS` to populate menu data from external vendor APIs.
+- For persistent credits/orders, set both `MONGODB_URI` and `MONGODB_DATABASE`. If they are omitted or MongoDB is unreachable, the serverless runtime falls back to an in-memory repository (non-persistent).
 
 For a office setting:
 This is a system for coordinating food orders to solve the problem of:
