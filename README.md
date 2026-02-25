@@ -1,4 +1,10 @@
 # Overview
+
+## Clerk Auth Setup
+- Copy `.env.example` to `.env.local`.
+- Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` with values from Clerk Dashboard.
+- Run `pnpm dev` and access `/`. Unauthenticated users are redirected to `/auth`.
+
 For a office setting:
 This is a system for coordinating food orders to solve the problem of:
 

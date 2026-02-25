@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import { useMemo, useState } from "react";
 
 type Role = "MEMBER" | "HIVE_MANAGER" | "INNOVATION_LEAD";
@@ -427,6 +428,9 @@ export default function Home() {
               >
                 Add credits
               </button>
+              <div className="rounded-full border border-[#dbe9e4] bg-white p-1">
+                <UserButton afterSignOutUrl="/auth" />
+              </div>
             </div>
           </div>
         </header>
