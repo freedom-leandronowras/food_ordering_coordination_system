@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"food_ordering_coordination_system/internal/domain"
-	"food_ordering_coordination_system/internal/integration"
+	"handler/internal/domain"
+	"handler/internal/integration"
 
 	"github.com/google/uuid"
 )

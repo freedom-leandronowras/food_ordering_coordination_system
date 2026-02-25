@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"food_ordering_coordination_system/internal/domain"
-	persistence "food_ordering_coordination_system/internal/persistance"
+	"handler/internal/domain"
+	persistence "handler/internal/persistance"
 
 	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"

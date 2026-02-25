@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"food_ordering_coordination_system/internal/domain"
-	"food_ordering_coordination_system/internal/integration"
-	"food_ordering_coordination_system/internal/integration/adapters"
+	"handler/internal/domain"
+	"handler/internal/integration"
+	"handler/internal/integration/adapters"
 
 	"github.com/google/uuid"
 )

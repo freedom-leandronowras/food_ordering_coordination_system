@@ -1,7 +1,7 @@
 package persistence
 
 import (
-	"food_ordering_coordination_system/internal/domain"
+	"handler/internal/domain"
 	"github.com/google/uuid"
 )
 

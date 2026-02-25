@@ -84,7 +84,8 @@ const menuSectionsData: MenuSectionsData = {
 };
 
 export default function MenuHomePage() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? (process.env.NODE_ENV === "production" ? "/go-api" : "");
 
   return (
     <MenuSections

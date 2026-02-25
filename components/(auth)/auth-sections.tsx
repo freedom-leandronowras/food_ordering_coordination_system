@@ -2,7 +2,7 @@
 
 import { SignIn, SignUp } from "@clerk/nextjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, useContext, type ReactNode } from "react";
+import { Suspense, createContext, useContext, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -236,8 +236,10 @@ function AuthPageSections({ data }: { data: AuthSectionsData }) {
 
 export function AuthSections({ data }: { data: AuthSectionsData }) {
   return (
-    <AuthSectionsProvider data={data}>
-      <AuthPageSections data={data} />
-    </AuthSectionsProvider>
+    <Suspense fallback={null}>
+      <AuthSectionsProvider data={data}>
+        <AuthPageSections data={data} />
+      </AuthSectionsProvider>
+    </Suspense>
   );
 }

@@ -3,8 +3,8 @@ package httpapi
 import (
 	"net/http"
 
-	"food_ordering_coordination_system/internal/domain"
-	"food_ordering_coordination_system/internal/integration"
+	"handler/internal/domain"
+	"handler/internal/integration"
 )
 
 func NewFoodOrderingRouter(service *domain.Service, aggregator *integration.Aggregator) http.Handler {
