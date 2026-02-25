@@ -1,0 +1,2 @@
+# Prevent Vercel from treating the standalone Go backend as Vercel Functions.
+api/**
