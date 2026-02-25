@@ -4,6 +4,7 @@
 - Copy `.env.example` to `.env.local`.
 - Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` with values from Clerk Dashboard.
 - Optional: set `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS` with a comma-separated list (e.g. `company.com,partner.io`) to enforce domain-restricted access.
+- Optional: set `NEXT_PUBLIC_API_BASE_URL`. In production, if it is omitted, the frontend falls back to `/go-api` (Vercel Go function route).
 - Run `pnpm dev` and access `/`. Unauthenticated users are redirected to `/auth`.
 - `pnpm dev` and `pnpm dev:vc` now start the UI, the Go API (`api/`), and a vendor API simulator.
 - The frontend communicates only with `NEXT_PUBLIC_API_BASE_URL`; external vendor calls are handled by `api/`.
@@ -14,6 +15,11 @@
 - Manager roles (`HIVE_MANAGER`, `INNOVATION_LEAD`) can switch between **Menu** and **Management** views in the header.
 - The management view allows searching Clerk users by email domain and granting credits to member UUID accounts.
 - For production sign-up enforcement, configure Clerk Dashboard restrictions to allow only your approved email domains.
+
+### Vercel Go API Function
+- The Go backend can be deployed as a Vercel Serverless Function via `/go-api/*`.
+- Requests to `/go-api/*` are routed to `api/vercel.go`, which forwards internally to the existing Go router paths (`/api/*`).
+- Keep `MONGODB_URI`, `MONGODB_DATABASE`, and optionally `VENDOR_URLS` configured in Vercel project environment variables.
 
 For a office setting:
 This is a system for coordinating food orders to solve the problem of:
