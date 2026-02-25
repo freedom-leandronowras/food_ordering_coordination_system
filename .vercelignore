@@ -1,0 +1,2 @@
+# Exclude the standalone Go backend from Vercel frontend deployments.
+api/**
