@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"food_ordering_coordination_system/internal/domain"
-	httpapi "food_ordering_coordination_system/internal/http"
 	"log"
 	"net/http"
 	"time"
+
+	"food_ordering_coordination_system/internal/application"
+	httpapi "food_ordering_coordination_system/internal/http"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 		)
 	}()
 
-	service := domain.NewFoodOrderingService(repo, repo)
+	service := application.NewFoodOrderingService(repo, repo)
 	router := httpapi.NewFoodOrderingRouter(
 		service,
 	)

@@ -5,15 +5,17 @@ import (
 	"errors"
 	"net/http"
 
+	"food_ordering_coordination_system/internal/application"
 	"food_ordering_coordination_system/internal/domain"
+	"food_ordering_coordination_system/internal/usecase/place_order"
 	"github.com/google/uuid"
 )
 
 type Controller struct {
-	service *domain.Service
+	service *application.Service
 }
 
-func NewFoodOrderingController(service *domain.Service) *Controller {
+func NewFoodOrderingController(service *application.Service) *Controller {
 	return &Controller{service: service}
 }
 
@@ -37,21 +39,21 @@ func (c *Controller) PlaceOrder(w http.ResponseWriter, r *http.Request, auth Aut
 		return
 	}
 
-	items := make([]domain.PlaceOrderItem, 0, len(req.Items))
+	items := make([]place_order.PlaceOrderItem, 0, len(req.Items))
 	for _, item := range req.Items {
 		itemID, parseErr := uuid.Parse(item.ID)
 		if parseErr != nil {
 			writeError(w, http.StatusBadRequest, "INVALID_REQUEST", "item id must be a valid uuid")
 			return
 		}
-		items = append(items, domain.PlaceOrderItem{
+		items = append(items, place_order.PlaceOrderItem{
 			ID:       itemID,
 			Quantity: item.Quantity,
 			Price:    item.Price,
 		})
 	}
 
-	result, err := c.service.PlaceOrder(domain.PlaceOrderInput{
+	result, err := c.service.PlaceOrder(place_order.PlaceOrderInput{
 		MemberID:      memberID,
 		Items:         items,
 		DeliveryNotes: req.DeliveryNotes,

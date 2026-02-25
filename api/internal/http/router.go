@@ -3,10 +3,10 @@ package httpapi
 import (
 	"net/http"
 
-	"food_ordering_coordination_system/internal/domain"
+	"food_ordering_coordination_system/internal/application"
 )
 
-func NewFoodOrderingRouter(service *domain.Service) http.Handler {
+func NewFoodOrderingRouter(service *application.Service) http.Handler {
 	controller := NewFoodOrderingController(service)
 	authenticator := NewAuthenticator()
 

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"food_ordering_coordination_system/internal/application"
 	"food_ordering_coordination_system/internal/domain"
 	httpapi "food_ordering_coordination_system/internal/http"
 	persistence "food_ordering_coordination_system/internal/persistance"
@@ -286,7 +287,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatalf("ensure schema: %v", err)
 	}
 
-	service := domain.NewFoodOrderingService(repo, repo)
+	service := application.NewFoodOrderingService(repo, repo)
 	router := httpapi.NewFoodOrderingRouter(service)
 
 	return &testEnv{

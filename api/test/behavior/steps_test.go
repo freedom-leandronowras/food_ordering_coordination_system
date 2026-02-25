@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"food_ordering_coordination_system/internal/application"
 	"food_ordering_coordination_system/internal/domain"
 	httpapi "food_ordering_coordination_system/internal/http"
 	persistence "food_ordering_coordination_system/internal/persistance"
@@ -87,7 +88,7 @@ func (s *scenarioState) reset() error {
 		return err
 	}
 
-	service := domain.NewFoodOrderingService(s.repo, s.repo)
+	service := application.NewFoodOrderingService(s.repo, s.repo)
 	s.router = httpapi.NewFoodOrderingRouter(service)
 
 	s.memberID = uuid.Nil

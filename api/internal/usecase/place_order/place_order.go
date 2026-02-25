@@ -1,15 +1,10 @@
-package domain
+package place_order
 
 import (
-	"errors"
 	"time"
 
+	"food_ordering_coordination_system/internal/domain"
 	"github.com/google/uuid"
-)
-
-var (
-	ErrInvalidOrder        = errors.New("invalid order")
-	ErrInsufficientCredits = errors.New("insufficient credits")
 )
 
 type PlaceOrderItem struct {
@@ -25,27 +20,17 @@ type PlaceOrderInput struct {
 }
 
 type PlaceOrderResult struct {
-	Order            FoodOrder
+	Order            domain.FoodOrder
 	RemainingCredits float64
 }
 
-type CreditRepository interface {
-	Get(memberID uuid.UUID) (float64, bool, error)
-	Set(memberID uuid.UUID, amount float64) error
-}
-
-type OrderEventRepository interface {
-	Save(order FoodOrder) error
-	Append(event Event) error
-}
-
 type PlaceOrderUseCase struct {
-	creditRepo     CreditRepository
-	orderEventRepo OrderEventRepository
+	creditRepo     domain.CreditRepository
+	orderEventRepo domain.OrderEventRepository
 	now            func() time.Time
 }
 
-func NewPlaceOrderUseCase(creditRepo CreditRepository, orderEventRepo OrderEventRepository) *PlaceOrderUseCase {
+func NewPlaceOrderUseCase(creditRepo domain.CreditRepository, orderEventRepo domain.OrderEventRepository) *PlaceOrderUseCase {
 	return &PlaceOrderUseCase{
 		creditRepo:     creditRepo,
 		orderEventRepo: orderEventRepo,
@@ -55,17 +40,17 @@ func NewPlaceOrderUseCase(creditRepo CreditRepository, orderEventRepo OrderEvent
 
 func (u *PlaceOrderUseCase) Execute(input PlaceOrderInput) (PlaceOrderResult, error) {
 	if input.MemberID == uuid.Nil || len(input.Items) == 0 {
-		return PlaceOrderResult{}, ErrInvalidOrder
+		return PlaceOrderResult{}, domain.ErrInvalidOrder
 	}
 
 	total := 0.0
-	orderItems := make([]FoodItem, 0, len(input.Items))
+	orderItems := make([]domain.FoodItem, 0, len(input.Items))
 	for _, item := range input.Items {
 		if item.ID == uuid.Nil || item.Quantity <= 0 || item.Price < 0 {
-			return PlaceOrderResult{}, ErrInvalidOrder
+			return PlaceOrderResult{}, domain.ErrInvalidOrder
 		}
 		total += float64(item.Quantity) * item.Price
-		orderItems = append(orderItems, FoodItem{
+		orderItems = append(orderItems, domain.FoodItem{
 			ID:       item.ID,
 			Quantity: item.Quantity,
 			Price:    item.Price,
@@ -77,30 +62,30 @@ func (u *PlaceOrderUseCase) Execute(input PlaceOrderInput) (PlaceOrderResult, er
 		return PlaceOrderResult{}, err
 	}
 	if !ok || currentCredits < total {
-		return PlaceOrderResult{}, ErrInsufficientCredits
+		return PlaceOrderResult{}, domain.ErrInsufficientCredits
 	}
 
-	order := FoodOrder{
+	order := domain.FoodOrder{
 		ID:            uuid.New(),
 		MemberID:      input.MemberID,
 		Items:         orderItems,
-		Status:        OrderStatusConfirmed,
+		Status:        domain.OrderStatusConfirmed,
 		TotalPrice:    total,
 		DeliveryNotes: input.DeliveryNotes,
 	}
 
-	event := Event{
+	event := domain.Event{
 		ID:          uuid.New(),
-		Type:        FoodOrderCreatedEvt,
+		Type:        domain.FoodOrderCreatedEvt,
 		AggregateID: order.ID,
 		OccurredAt:  u.now().UTC(),
-		Payload: FoodOrderPlaced{
+		Payload: domain.FoodOrderPlaced{
 			OrderID:       order.ID,
 			MemberID:      input.MemberID,
 			Items:         orderItems,
 			TotalPrice:    total,
 			DeliveryNotes: input.DeliveryNotes,
-			Status:        OrderStatusConfirmed,
+			Status:        domain.OrderStatusConfirmed,
 		},
 	}
 
@@ -118,18 +103,4 @@ func (u *PlaceOrderUseCase) Execute(input PlaceOrderInput) (PlaceOrderResult, er
 		Order:            order,
 		RemainingCredits: currentCredits - total,
 	}, nil
-}
-
-type GetCreditsUseCase struct {
-	creditRepo CreditRepository
-}
-
-func NewGetCreditsUseCase(creditRepo CreditRepository) *GetCreditsUseCase {
-	return &GetCreditsUseCase{
-		creditRepo: creditRepo,
-	}
-}
-
-func (u *GetCreditsUseCase) Execute(memberID uuid.UUID) (float64, bool, error) {
-	return u.creditRepo.Get(memberID)
 }
