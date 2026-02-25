@@ -8,6 +8,9 @@ const menuSectionsData: MenuSectionsData = {
     brandName: "SoftLunch",
     subtitle: "Menu",
     addCreditsButtonLabel: "Add credits",
+    viewLabel: "View",
+    menuViewLabel: "Menu",
+    managementViewLabel: "Management",
   },
   sidebar: {
     title: "Dietary",
@@ -57,6 +60,20 @@ const menuSectionsData: MenuSectionsData = {
       submitLabel: "Grant Credits",
       submittingLabel: "Granting...",
     },
+  },
+  management: {
+    title: "Member Management",
+    description:
+      "Search members by email domain and grant credits to the selected member account.",
+    domainLabel: "Email domain",
+    domainPlaceholder: "company.com",
+    searchLabel: "Find members",
+    searchingLabel: "Searching...",
+    noResultsLabel: "No members loaded yet. Search by domain to start.",
+    memberIdLabel: "Member ID",
+    grantAmountLabel: "Credits",
+    grantLabel: "Grant credits",
+    grantingLabel: "Granting...",
   },
   mobileNav: {
     items: ["Menu", "Orders", "Account"],

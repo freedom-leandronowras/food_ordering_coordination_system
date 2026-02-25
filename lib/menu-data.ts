@@ -51,6 +51,18 @@ export type GrantCreditsResponse = {
   new_balance: number;
 };
 
+export type ManagedMember = {
+  user_id: string;
+  member_id: string;
+  email: string;
+  full_name: string;
+};
+
+export type MembersByDomainResponse = {
+  domain: string;
+  members: ManagedMember[];
+};
+
 export function formatMoney(value: number) {
   return `$${value.toFixed(2)}`;
 }

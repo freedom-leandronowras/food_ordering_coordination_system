@@ -3,6 +3,9 @@ export type MenuSectionsData = {
     brandName: string;
     subtitle: string;
     addCreditsButtonLabel: string;
+    viewLabel: string;
+    menuViewLabel: string;
+    managementViewLabel: string;
   };
   sidebar: {
     title: string;
@@ -50,6 +53,19 @@ export type MenuSectionsData = {
       submitLabel: string;
       submittingLabel: string;
     };
+  };
+  management: {
+    title: string;
+    description: string;
+    domainLabel: string;
+    domainPlaceholder: string;
+    searchLabel: string;
+    searchingLabel: string;
+    noResultsLabel: string;
+    memberIdLabel: string;
+    grantAmountLabel: string;
+    grantLabel: string;
+    grantingLabel: string;
   };
   mobileNav: {
     items: string[];

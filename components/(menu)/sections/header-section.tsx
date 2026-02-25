@@ -13,7 +13,7 @@ type HeaderSectionProps = {
 };
 
 export function HeaderSection({ data }: HeaderSectionProps) {
-  const { credits, memberId, setShowGrantModal } = useMenuContext();
+  const { credits, memberId, isManager, viewMode, setViewMode, setShowGrantModal } = useMenuContext();
 
   return (
     <Card className="rounded-2xl border-[#dce9e4] bg-white/95 px-4 py-3 backdrop-blur">
@@ -29,12 +29,36 @@ export function HeaderSection({ data }: HeaderSectionProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {isManager ? (
+            <div className="flex items-center gap-2 rounded-full border border-[#dbe9e4] bg-white p-1">
+              <span className="px-2 text-xs text-[#617b74]">{data.viewLabel}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === "menu" ? "default" : "ghost"}
+                onClick={() => setViewMode("menu")}
+              >
+                {data.menuViewLabel}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === "management" ? "default" : "ghost"}
+                onClick={() => setViewMode("management")}
+              >
+                {data.managementViewLabel}
+              </Button>
+            </div>
+          ) : null}
+
           <span className="rounded-full border border-[#dbe9e4] bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#245f55]">
             Credits: {formatMoney(credits)}
           </span>
-          <Button type="button" onClick={() => setShowGrantModal(true)} disabled={!memberId}>
-            {data.addCreditsButtonLabel}
-          </Button>
+          {isManager ? (
+            <Button type="button" onClick={() => setShowGrantModal(true)} disabled={!memberId}>
+              {data.addCreditsButtonLabel}
+            </Button>
+          ) : null}
           <div className="rounded-full border border-[#dbe9e4] bg-white p-1">
             <UserButton afterSignOutUrl="/auth" />
           </div>

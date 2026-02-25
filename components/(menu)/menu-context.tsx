@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -16,16 +16,28 @@ import type {
   CartLine,
   CreditsResponse,
   GrantCreditsResponse,
+  ManagedMember,
   MemberOrder,
+  MembersByDomainResponse,
   MenuItem,
   PlaceOrderResponse,
   VendorMenu,
 } from "@/lib/menu-data";
+import {
+  isEmailAllowedForDomains,
+  isManagerRole,
+  normalizeDomain,
+  parseAllowedEmailDomains,
+  isValidDomain,
+} from "@/lib/auth-policy";
 import { formatMoney, getApiErrorMessage } from "@/lib/menu-data";
 
 type MenuContextValue = {
   isCheckingJwt: boolean;
   isBootstrapping: boolean;
+  isManager: boolean;
+  viewMode: "menu" | "management";
+  setViewMode: (mode: "menu" | "management") => void;
   memberId: string;
   vendors: VendorMenu[];
   selectedVendor: VendorMenu | null;
@@ -58,6 +70,8 @@ type MenuContextValue = {
   updateCartQuantity: (itemId: string, quantity: number) => void;
   placeOrder: () => Promise<boolean>;
   grantCredits: () => Promise<boolean>;
+  grantCreditsToMember: (targetMemberId: string, amount: number) => Promise<boolean>;
+  lookupMembersByDomain: (domain: string) => Promise<ManagedMember[]>;
 };
 
 type MenuProviderProps = {
@@ -75,6 +89,7 @@ function buildApiUrl(baseUrl: string, path: string) {
 type JwtClaims = {
   sub?: string;
   exp?: number;
+  role?: string;
 };
 
 function parseJwtClaims(token: string): JwtClaims | null {
@@ -129,11 +144,47 @@ async function requestJson<T,>(baseUrl: string, path: string, options?: RequestI
   return payload as T;
 }
 
+async function requestRelativeJson<T,>(path: string, options?: RequestInit): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (options?.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(path, {
+    ...options,
+    headers,
+  });
+
+  const text = await response.text();
+  let payload: unknown = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text) as unknown;
+    } catch {
+      payload = text;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(getApiErrorMessage(payload));
+  }
+
+  return payload as T;
+}
+
 export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
   const { isLoaded, getToken } = useAuth();
+  const { isLoaded: isUserLoaded, user } = useUser();
+  const { signOut } = useClerk();
   const router = useRouter();
+  const allowedEmailDomains = useMemo(
+    () => parseAllowedEmailDomains(process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS),
+    [],
+  );
 
   const [memberId, setMemberId] = useState("");
+  const [isManager, setIsManager] = useState(false);
+  const [viewMode, setViewMode] = useState<"menu" | "management">("menu");
   const [sessionToken, setSessionToken] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [menus, setMenus] = useState<VendorMenu[]>([]);
@@ -264,7 +315,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     let isMounted = true;
 
     const validateJwt = async () => {
-      if (!isLoaded) {
+      if (!isLoaded || !isUserLoaded) {
         return;
       }
 
@@ -274,6 +325,19 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
           setIsCheckingJwt(false);
         }
         router.replace("/auth");
+        return;
+      }
+
+      const emailAddress = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
+      const hasRestrictedDomains = allowedEmailDomains.length > 0;
+      if (
+        hasRestrictedDomains &&
+        (!emailAddress || !isEmailAllowedForDomains(emailAddress, allowedEmailDomains))
+      ) {
+        if (isMounted) {
+          setIsCheckingJwt(false);
+        }
+        await signOut({ redirectUrl: "/auth?error=EMAIL_DOMAIN_NOT_ALLOWED" });
         return;
       }
 
@@ -297,6 +361,11 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       if (isMounted) {
         setSessionToken(token);
         setMemberId(claims.sub);
+        const managerRole = isManagerRole(claims.role);
+        setIsManager(managerRole);
+        if (!managerRole) {
+          setViewMode("menu");
+        }
         setIsCheckingJwt(false);
       }
     };
@@ -306,7 +375,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     return () => {
       isMounted = false;
     };
-  }, [getToken, isLoaded, router]);
+  }, [allowedEmailDomains, getToken, isLoaded, isUserLoaded, router, signOut, user]);
 
   useEffect(() => {
     if (!memberId || !sessionToken) {
@@ -398,49 +467,101 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     }
   };
 
+  const grantCreditsToMember = useCallback(
+    async (targetMemberId: string, amount: number) => {
+      clearMessages();
+      if (!isManager) {
+        setErrorMessage("Only managers can grant credits.");
+        return false;
+      }
+      if (!targetMemberId) {
+        setErrorMessage("Target member id is required.");
+        return false;
+      }
+      if (!sessionToken) {
+        setErrorMessage("Session token is missing.");
+        return false;
+      }
+      if (!Number.isFinite(amount) || amount <= 0) {
+        setErrorMessage("Grant amount must be a positive number.");
+        return false;
+      }
+
+      setGrantingCredits(true);
+      try {
+        const payload = await requestJson<GrantCreditsResponse>(
+          apiBaseUrl,
+          `/members/${encodeURIComponent(targetMemberId)}/credits`,
+          {
+            method: "POST",
+            headers: withAuthHeader(sessionToken),
+            body: JSON.stringify({ amount }),
+          },
+        );
+        const updatedCredits = Number(payload.new_balance ?? 0);
+        if (targetMemberId === memberId) {
+          setCredits(updatedCredits);
+        }
+        setStatusMessage(
+          `Granted ${formatMoney(amount)} to ${targetMemberId}. New balance: ${formatMoney(updatedCredits)}.`,
+        );
+        return true;
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Could not grant credits.");
+        return false;
+      } finally {
+        setGrantingCredits(false);
+      }
+    },
+    [apiBaseUrl, clearMessages, isManager, memberId, sessionToken],
+  );
+
   const grantCredits = async () => {
     clearMessages();
     if (!memberId) {
       setErrorMessage("Member id is not available in the session token.");
       return false;
     }
-    if (!sessionToken) {
-      setErrorMessage("Session token is missing.");
-      return false;
-    }
-
     const amount = Number(grantAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setErrorMessage("Grant amount must be a positive number.");
-      return false;
-    }
-
-    setGrantingCredits(true);
-    try {
-      const payload = await requestJson<GrantCreditsResponse>(
-        apiBaseUrl,
-        `/members/${encodeURIComponent(memberId)}/credits`,
-        {
-          method: "POST",
-          headers: withAuthHeader(sessionToken),
-          body: JSON.stringify({ amount }),
-        },
-      );
-      const updatedCredits = Number(payload.new_balance ?? 0);
-      setCredits(updatedCredits);
-      setStatusMessage(`Credits granted. New balance: ${formatMoney(updatedCredits)}.`);
-      return true;
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not grant credits.");
-      return false;
-    } finally {
-      setGrantingCredits(false);
-    }
+    return grantCreditsToMember(memberId, amount);
   };
+
+  const lookupMembersByDomain = useCallback(
+    async (domain: string) => {
+      clearMessages();
+      if (!isManager) {
+        setErrorMessage("Only managers can access member management.");
+        return [];
+      }
+
+      const normalizedDomain = normalizeDomain(domain);
+      if (!normalizedDomain || !isValidDomain(normalizedDomain)) {
+        setErrorMessage("Please enter a valid email domain.");
+        return [];
+      }
+
+      try {
+        const payload = await requestRelativeJson<MembersByDomainResponse>(
+          `/api/management/members?domain=${encodeURIComponent(normalizedDomain)}`,
+          { cache: "no-store" },
+        );
+        const members = Array.isArray(payload.members) ? payload.members : [];
+        setStatusMessage(`Loaded ${members.length} member(s) for ${payload.domain}.`);
+        return members;
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Could not load members by domain.");
+        return [];
+      }
+    },
+    [clearMessages, isManager],
+  );
 
   const value: MenuContextValue = {
     isCheckingJwt,
     isBootstrapping,
+    isManager,
+    viewMode,
+    setViewMode,
     memberId,
     vendors,
     selectedVendor,
@@ -473,6 +594,8 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     updateCartQuantity,
     placeOrder,
     grantCredits,
+    grantCreditsToMember,
+    lookupMembersByDomain,
   };
 
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;
