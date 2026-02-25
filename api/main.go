@@ -1,39 +1,55 @@
 package main
 
-/*
-1. fazer events
-2. go channels? testar?
-3. graphql
-4. go mux endpoint? (by hand)
-*/
-
-/*
-## flow
-1. authenticate
-2. use the returned data to instantiate structs
-3. struct instantiate events
-4. dto for interface
-
-obs: i need to store the event and its status
-*/
-
 import (
-	"fmt"
-
-	"github.com/google/uuid"
+	"context"
+	"food_ordering_coordination_system/internal/domain"
+	httpapi "food_ordering_coordination_system/internal/http"
+	"log"
+	"net/http"
+	"time"
 )
 
 func main() {
-	fmt.Println("oi")
-}
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		15*time.Second,
+	)
+	defer cancel()
 
-type FoodItemDTO struct {
-	ID       uuid.UUID `json:"id"`
-	Quantity int       `json:"quantity"`
-	Price    float64   `json:"price"`
-}
+	repo, client, err := ConnectMongoRepository(ctx, cfg)
+	if err != nil {
+		log.Fatalf(
+			"connect mongo repository: %v",
+			err,
+		)
+	}
+	defer func() {
+		disconnectCtx, disconnectCancel := context.WithTimeout(
+			context.Background(),
+			5*time.Second,
+		)
+		defer disconnectCancel()
+		_ = client.Disconnect(
+			disconnectCtx,
+		)
+	}()
 
-type FoodOrderPlacedDTO struct {
-	Items         []FoodItemDTO `json:"items"`
-	DeliveryNotes string        `json:"delivery_notes"`
+	service := domain.NewFoodOrderingService(repo, repo)
+	router := httpapi.NewFoodOrderingRouter(
+		service,
+	)
+
+	log.Printf(
+		"api listening on :%s",
+		cfg.Port,
+	)
+	if err := http.ListenAndServe(
+		":"+cfg.Port, router,
+	); err != nil {
+		log.Fatal(err)
+	}
 }
