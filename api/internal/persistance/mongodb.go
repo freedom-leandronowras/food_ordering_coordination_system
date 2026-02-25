@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"food_ordering_coordination_system/internal/domain"
+	"handler/internal/domain"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"food_ordering_coordination_system/internal/domain"
-	httpapi "food_ordering_coordination_system/internal/http"
-	persistence "food_ordering_coordination_system/internal/persistance"
+	"handler/internal/domain"
+	httpapi "handler/internal/http"
+	persistence "handler/internal/persistance"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"

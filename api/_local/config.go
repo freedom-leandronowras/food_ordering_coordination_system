@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	persistence "food_ordering_coordination_system/internal/persistance"
+	persistence "handler/internal/persistance"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

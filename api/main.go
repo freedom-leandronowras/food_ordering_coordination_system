@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"food_ordering_coordination_system/internal/domain"
-	httpapi "food_ordering_coordination_system/internal/http"
-	"food_ordering_coordination_system/internal/integration"
-	"food_ordering_coordination_system/internal/integration/adapters"
-	persistence "food_ordering_coordination_system/internal/persistance"
+	"handler/internal/domain"
+	httpapi "handler/internal/http"
+	"handler/internal/integration"
+	"handler/internal/integration/adapters"
+	persistence "handler/internal/persistance"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

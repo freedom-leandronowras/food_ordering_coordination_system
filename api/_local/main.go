@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"food_ordering_coordination_system/internal/domain"
-	httpapi "food_ordering_coordination_system/internal/http"
-	"food_ordering_coordination_system/internal/integration"
-	"food_ordering_coordination_system/internal/integration/adapters"
+	"handler/internal/domain"
+	httpapi "handler/internal/http"
+	"handler/internal/integration"
+	"handler/internal/integration/adapters"
 )
 
 func main() {

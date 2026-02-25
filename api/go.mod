@@ -1,4 +1,4 @@
-module food_ordering_coordination_system
+module handler
 
 go 1.24.0
 
