@@ -19,24 +19,16 @@ This system integrates food vendors and allows users to make and audit orders.
  
 ### First-time setup
  
-1. Install frontend dependencies:
- 
-   ```bash
-   cd web_ui && pnpm install
-   ```
- 
-2. Download Go module dependencies:
- 
-   ```bash
-   cd coordination_api && go mod download
-   ```
- 
-3. Create the local environment file at `web_ui/.env.local`:
- 
-   ```
-   NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8080
-   JWT_SIGNING_KEY=local-dev-signing-key
-   ```
+Run one command from the repository root:
+
+```bash
+mise run first-time-setup
+```
+
+This task:
+- installs `web_ui` dependencies (only when `web_ui/node_modules` is missing)
+- downloads `coordination_api` Go module dependencies
+- creates `web_ui/.env.local` with local defaults only when the file is missing or empty
  
 ## Local Development (Live Reload)
  

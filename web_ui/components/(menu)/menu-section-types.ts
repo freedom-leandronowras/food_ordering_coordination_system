@@ -4,6 +4,7 @@ export type MenuSectionsData = {
     subtitle: string;
     addCreditsButtonLabel: string;
     menuViewLabel: string;
+    historyViewLabel: string;
     managementViewLabel: string;
   };
   sidebar: {
@@ -41,6 +42,9 @@ export type MenuSectionsData = {
     grant: {
       title: string;
       description: string;
+      memberTitle: string;
+      memberDescription: string;
+      memberActionLabel: string;
       amountLabel: string;
       amountPlaceholder: string;
       reasonLabel: string;
@@ -65,6 +69,21 @@ export type MenuSectionsData = {
     grantAmountLabel: string;
     grantLabel: string;
     grantingLabel: string;
+  };
+  history: {
+    title: string;
+    memberDescription: string;
+    managerDescription: string;
+    loadingLabel: string;
+    emptyMemberLabel: string;
+    emptyManagerLabel: string;
+    memberIdLabel: string;
+    orderIdLabel: string;
+    statusLabel: string;
+    totalLabel: string;
+    notesLabel: string;
+    noNotesLabel: string;
+    itemsLabel: string;
   };
   mobileNav: {
     items: string[];

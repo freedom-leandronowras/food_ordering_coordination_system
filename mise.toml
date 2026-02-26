@@ -498,6 +498,48 @@ description = "Atomic production deployment pipeline for EC2 Kubernetes (build, 
 depends = ["smoke-prod"]
 run = 'echo "Production deployment completed"'
 
+[tasks.first-time-setup]
+description = "Install local dependencies and initialize local env for first run"
+run = '''
+set -euo pipefail
+
+ROOT_DIR="$(pwd)"
+WEB_DIR="$ROOT_DIR/web_ui"
+API_DIR="$ROOT_DIR/coordination_api"
+WEB_ENV_FILE="$WEB_DIR/.env.local"
+
+require_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Missing required command: $cmd" >&2
+    exit 1
+  fi
+}
+
+require_cmd pnpm
+require_cmd go
+
+if [[ ! -d "$WEB_DIR/node_modules" ]]; then
+  echo "Installing frontend dependencies..."
+  pnpm --dir "$WEB_DIR" install
+else
+  echo "Frontend dependencies already installed; skipping."
+fi
+
+echo "Downloading Go module dependencies..."
+go -C "$API_DIR" mod download
+
+if [[ ! -s "$WEB_ENV_FILE" ]]; then
+  cat >"$WEB_ENV_FILE" <<'EOF'
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8080
+JWT_SIGNING_KEY=local-dev-signing-key
+EOF
+  echo "Initialized $WEB_ENV_FILE with local defaults."
+else
+  echo "$WEB_ENV_FILE already has content; leaving it unchanged."
+fi
+'''
+
 [tasks.dev-local]
 description = "Run web, API, and vendor mocks locally with live reload on localhost:3000"
 run = '''

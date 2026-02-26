@@ -137,7 +137,7 @@ function AuthSectionsProvider({ children, data }: { children: ReactNode; data: A
 
 function AuthHeroSection({ data }: { data: AuthSectionsData }) {
   return (
-    <section className="motion-enter relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-sl-d7ebe6 via-sl-cce4de to-sl-bdd9d2 p-10 lg:flex lg:flex-col lg:justify-between">
+    <section className="motion-enter relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-sl-d7ebe6 via-sl-cce4de to-sl-bdd9d2 p-10 lg:flex lg:flex-col lg:justify-start lg:gap-10">
       <div className="motion-enter-delayed flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">#</div>
         <div>
@@ -155,7 +155,7 @@ function AuthHeroSection({ data }: { data: AuthSectionsData }) {
         </div>
       </Card>
 
-      {data.brand.versionLabel ? <p className="text-xs text-sl-5e7c75">{data.brand.versionLabel}</p> : null}
+      {data.brand.versionLabel ? <p className="mt-auto text-xs text-sl-5e7c75">{data.brand.versionLabel}</p> : null}
     </section>
   );
 }

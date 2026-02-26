@@ -12,11 +12,11 @@ const authSectionsData: AuthSectionsData = {
     versionLabel: "",
   },
   hero: {
-    badge: "Trending today",
-    title: "Spicy Tuna Poke Bowl",
+    badge: "Food ordering coordination",
+    title: "One place for office lunch operations",
     description:
-      "Sign in to browse curated menus, reserve lunch, and manage team credits.",
-    availabilityLabel: "Available until 11:30 AM",
+      "Coordinate vendors, place orders, and manage member credits with a simple workflow for both members and managers.",
+    availabilityLabel: "Fast, clear, and team-friendly",
   },
   form: {
     signInLabel: "Sign in",

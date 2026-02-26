@@ -6,6 +6,7 @@ import { MenuLoadingState } from "@/components/(menu)/menu-loading-state";
 import { DialogsSection } from "@/components/(menu)/sections/dialogs-section";
 import { FeedbackSection } from "@/components/(menu)/sections/feedback-section";
 import { HeaderSection } from "@/components/(menu)/sections/header-section";
+import { HistorySection } from "@/components/(menu)/sections/history-section";
 import { MainSection } from "@/components/(menu)/sections/main-section";
 import { ManagementSection } from "@/components/(menu)/sections/management-section";
 import { MobileNavSection } from "@/components/(menu)/sections/mobile-nav-section";
@@ -20,6 +21,7 @@ type MenuContentProps = {
 export function MenuContent({ sectionsData }: MenuContentProps) {
   const { isCheckingJwt, isManager, viewMode } = useMenuContext();
   const showingManagement = isManager && viewMode === "management";
+  const showingHistory = viewMode === "history";
 
   if (isCheckingJwt) {
     return <MenuLoadingState sectionsData={sectionsData} />;
@@ -35,12 +37,14 @@ export function MenuContent({ sectionsData }: MenuContentProps) {
             <FeedbackSection />
             {showingManagement ? (
               <ManagementSection data={sectionsData.management} />
+            ) : showingHistory ? (
+              <HistorySection data={sectionsData.history} />
             ) : (
               <MainSection featured={sectionsData.featured} items={sectionsData.items} />
             )}
           </div>
         }
-        aside={showingManagement ? null : <TraySection data={sectionsData.tray} />}
+        aside={showingManagement || showingHistory ? null : <TraySection data={sectionsData.tray} />}
         mobileNav={<MobileNavSection data={sectionsData.mobileNav} />}
       />
 

@@ -28,16 +28,24 @@ export function HeaderSection({ data }: HeaderSectionProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {isManager ? (
-            <div className="flex items-center gap-2 rounded-full border border-sl-dbe9e4 bg-sl-ffffff p-1">
-              <Button
-                type="button"
-                size="sm"
-                variant={viewMode === "menu" ? "default" : "ghost"}
-                onClick={() => setViewMode("menu")}
-              >
-                {data.menuViewLabel}
-              </Button>
+          <div className="flex items-center gap-2 rounded-full border border-sl-dbe9e4 bg-sl-ffffff p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "menu" ? "default" : "ghost"}
+              onClick={() => setViewMode("menu")}
+            >
+              {data.menuViewLabel}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "history" ? "default" : "ghost"}
+              onClick={() => setViewMode("history")}
+            >
+              {data.historyViewLabel}
+            </Button>
+            {isManager ? (
               <Button
                 type="button"
                 size="sm"
@@ -46,17 +54,15 @@ export function HeaderSection({ data }: HeaderSectionProps) {
               >
                 {data.managementViewLabel}
               </Button>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
 
           <span className="rounded-full border border-sl-dbe9e4 bg-sl-edf7f3 px-3 py-1 text-xs font-semibold text-sl-245f55">
             Credits: {formatMoney(credits)}
           </span>
-          {isManager ? (
-            <Button type="button" onClick={() => setShowGrantModal(true)} disabled={!memberId}>
-              {data.addCreditsButtonLabel}
-            </Button>
-          ) : null}
+          <Button type="button" onClick={() => setShowGrantModal(true)} disabled={!memberId}>
+            {data.addCreditsButtonLabel}
+          </Button>
           <Button type="button" variant="ghost" onClick={signOut}>
             Sign out
           </Button>

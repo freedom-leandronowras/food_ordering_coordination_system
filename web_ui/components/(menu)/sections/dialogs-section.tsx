@@ -131,82 +131,110 @@ export function DialogsSection({ data }: DialogsSectionProps) {
 
       <Dialog open={showGrantModal} onOpenChange={setShowGrantModal}>
         <DialogContent>
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <DialogTitle>{data.grant.title}</DialogTitle>
-                <DialogDescription>{data.grant.description}</DialogDescription>
-              </div>
-              <DialogClose asChild>
-                <Button type="button" size="icon" variant="outline">
-                  x
+          {isManager ? (
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <DialogTitle>{data.grant.title}</DialogTitle>
+                    <DialogDescription>{data.grant.description}</DialogDescription>
+                  </div>
+                  <DialogClose asChild>
+                    <Button type="button" size="icon" variant="outline">
+                      x
+                    </Button>
+                  </DialogClose>
+                </div>
+              </DialogHeader>
+
+              <label className="block text-sm font-medium">
+                {data.grant.amountLabel}
+                <Input
+                  value={grantAmount}
+                  onChange={(event) => setGrantAmount(event.target.value)}
+                  className="mt-1"
+                  inputMode="decimal"
+                  placeholder={data.grant.amountPlaceholder}
+                />
+              </label>
+
+              <label className="mt-3 block text-sm font-medium">
+                {data.grant.reasonLabel}
+                <select
+                  value={grantReason}
+                  onChange={(event) => setGrantReason(event.target.value)}
+                  className={cn(
+                    "mt-1 flex h-10 w-full rounded-2xl border border-sl-d7e6e1 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sl-1f6f64",
+                  )}
+                >
+                  {data.grant.reasons.map((reason) => (
+                    <option key={reason}>{reason}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="mt-3 block text-sm font-medium">
+                {data.grant.internalNoteLabel}
+                <textarea
+                  value={grantInternalNote}
+                  onChange={(event) => setGrantInternalNote(event.target.value)}
+                  className={cn(
+                    "mt-1 h-24 w-full rounded-2xl border border-sl-d7e6e1 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830 placeholder:text-sl-7a908a focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sl-1f6f64",
+                  )}
+                  placeholder={data.grant.internalNotePlaceholder}
+                />
+              </label>
+
+              <Card className="mt-3 rounded-2xl border-0 bg-sl-eef7f4 p-3 text-xs text-sl-587771">
+                {data.grant.helperText}
+              </Card>
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" className="flex-1">
+                    {data.grant.cancelLabel}
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="button"
+                  disabled={grantingCredits || !memberId || !isManager}
+                  onClick={async () => {
+                    const ok = await grantCredits();
+                    if (ok) {
+                      setShowGrantModal(false);
+                    }
+                  }}
+                  className="flex-1"
+                >
+                  {grantingCredits ? data.grant.submittingLabel : data.grant.submitLabel}
                 </Button>
-              </DialogClose>
-            </div>
-          </DialogHeader>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <DialogTitle>{data.grant.memberTitle}</DialogTitle>
+                    <DialogDescription>{data.grant.memberDescription}</DialogDescription>
+                  </div>
+                  <DialogClose asChild>
+                    <Button type="button" size="icon" variant="outline">
+                      x
+                    </Button>
+                  </DialogClose>
+                </div>
+              </DialogHeader>
 
-          <label className="block text-sm font-medium">
-            {data.grant.amountLabel}
-            <Input
-              value={grantAmount}
-              onChange={(event) => setGrantAmount(event.target.value)}
-              className="mt-1"
-              inputMode="decimal"
-              placeholder={data.grant.amountPlaceholder}
-            />
-          </label>
-
-          <label className="mt-3 block text-sm font-medium">
-            {data.grant.reasonLabel}
-            <select
-              value={grantReason}
-              onChange={(event) => setGrantReason(event.target.value)}
-              className={cn(
-                "mt-1 flex h-10 w-full rounded-2xl border border-sl-d7e6e1 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sl-1f6f64",
-              )}
-            >
-              {data.grant.reasons.map((reason) => (
-                <option key={reason}>{reason}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="mt-3 block text-sm font-medium">
-            {data.grant.internalNoteLabel}
-            <textarea
-              value={grantInternalNote}
-              onChange={(event) => setGrantInternalNote(event.target.value)}
-              className={cn(
-                "mt-1 h-24 w-full rounded-2xl border border-sl-d7e6e1 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830 placeholder:text-sl-7a908a focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sl-1f6f64",
-              )}
-              placeholder={data.grant.internalNotePlaceholder}
-            />
-          </label>
-
-          <Card className="mt-3 rounded-2xl border-0 bg-sl-eef7f4 p-3 text-xs text-sl-587771">
-            {data.grant.helperText}
-          </Card>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" className="flex-1">
-                {data.grant.cancelLabel}
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
-              disabled={grantingCredits || !memberId || !isManager}
-              onClick={async () => {
-                const ok = await grantCredits();
-                if (ok) {
-                  setShowGrantModal(false);
-                }
-              }}
-              className="flex-1"
-            >
-              {grantingCredits ? data.grant.submittingLabel : data.grant.submitLabel}
-            </Button>
-          </DialogFooter>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" className="w-full">
+                    {data.grant.memberActionLabel}
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>

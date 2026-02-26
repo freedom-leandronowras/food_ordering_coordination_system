@@ -37,12 +37,21 @@ import type {
 } from "@/lib/menu-data";
 import { formatMoney, getApiErrorMessage } from "@/lib/menu-data";
 
+export type OrderHistoryEntry = {
+  memberId: string;
+  memberEmail: string;
+  memberName: string;
+  order: MemberOrder;
+};
+
+type ViewMode = "menu" | "history" | "management";
+
 type MenuContextValue = {
   isCheckingJwt: boolean;
   isBootstrapping: boolean;
   isManager: boolean;
-  viewMode: "menu" | "management";
-  setViewMode: (mode: "menu" | "management") => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   memberId: string;
   vendors: VendorMenu[];
   selectedVendor: VendorMenu | null;
@@ -71,9 +80,12 @@ type MenuContextValue = {
   setGrantInternalNote: (value: string) => void;
   errorMessage: string;
   statusMessage: string;
+  historyLoading: boolean;
+  orderHistory: OrderHistoryEntry[];
   addToCart: (vendorName: string, item: MenuItem) => void;
   updateCartQuantity: (itemId: string, quantity: number) => void;
   placeOrder: () => Promise<boolean>;
+  refreshOrderHistory: (options?: { silent?: boolean }) => Promise<void>;
   grantCredits: () => Promise<boolean>;
   grantCreditsToMember: (targetMemberId: string, amount: number) => Promise<boolean>;
   lookupMembersByDomain: (domain: string) => Promise<ManagedMember[]>;
@@ -134,14 +146,16 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
   );
 
   const [memberId, setMemberId] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberName, setMemberName] = useState("");
   const [isManager, setIsManager] = useState(false);
-  const [viewMode, setViewMode] = useState<"menu" | "management">("menu");
+  const [viewMode, setViewMode] = useState<ViewMode>("menu");
   const [sessionToken, setSessionToken] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [menus, setMenus] = useState<VendorMenu[]>([]);
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [credits, setCredits] = useState<number>(0);
-  const [, setOrders] = useState<MemberOrder[]>([]);
+  const [orderHistory, setOrderHistory] = useState<OrderHistoryEntry[]>([]);
 
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [grantReason, setGrantReason] = useState("Manual adjustment");
@@ -150,6 +164,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
 
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isCheckingJwt, setIsCheckingJwt] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [grantingCredits, setGrantingCredits] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -191,36 +206,23 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     clearSessionToken();
     setSessionToken("");
     setMemberId("");
+    setMemberEmail("");
+    setMemberName("");
     setIsManager(false);
+    setOrderHistory([]);
     router.replace("/auth");
   }, [router]);
 
-  const refreshOrders = useCallback(
-    async (targetMemberId: string, token: string, options?: { silent?: boolean }) => {
+  const fetchMemberOrders = useCallback(
+    async (targetMemberId: string, token: string): Promise<MemberOrder[]> => {
       if (!targetMemberId) {
-        return;
+        return [];
       }
-      if (!options?.silent) {
-        clearMessages();
-      }
-
-      try {
-        const payload = await requestJson<MemberOrder[]>(
-          apiBaseUrl,
-          `/api/members/${encodeURIComponent(targetMemberId)}/orders`,
-          {
-            headers: withAuthHeader(token),
-          },
-        );
-        setOrders(payload);
-        if (!options?.silent) {
-          setStatusMessage("Order history refreshed.");
-        }
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Could not load orders.");
-      }
+      return requestJson<MemberOrder[]>(apiBaseUrl, `/api/members/${encodeURIComponent(targetMemberId)}/orders`, {
+        headers: withAuthHeader(token),
+      });
     },
-    [apiBaseUrl, clearMessages],
+    [apiBaseUrl],
   );
 
   const refreshCredits = useCallback(
@@ -251,7 +253,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
   );
 
   const bootstrapApiData = useCallback(
-    async (targetMemberId: string, token: string) => {
+    async (targetMemberId: string, token: string, managerRole: boolean) => {
       clearMessages();
       setIsBootstrapping(true);
       try {
@@ -260,17 +262,30 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
         setMenus(menusPayload);
         setSelectedVendorId(menusPayload[0]?.service_id ?? "");
 
-        await Promise.all([
-          refreshCredits(targetMemberId, token),
-          refreshOrders(targetMemberId, token, { silent: true }),
-        ]);
+        if (managerRole) {
+          await refreshCredits(targetMemberId, token);
+          setOrderHistory([]);
+        } else {
+          const [, memberOrders] = await Promise.all([
+            refreshCredits(targetMemberId, token),
+            fetchMemberOrders(targetMemberId, token),
+          ]);
+          setOrderHistory(
+            memberOrders.map((order) => ({
+              memberId: targetMemberId,
+              memberEmail,
+              memberName,
+              order,
+            })),
+          );
+        }
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Could not load API data.");
       } finally {
         setIsBootstrapping(false);
       }
     },
-    [apiBaseUrl, clearMessages, refreshCredits, refreshOrders],
+    [apiBaseUrl, clearMessages, fetchMemberOrders, memberEmail, memberName, refreshCredits],
   );
 
   useEffect(() => {
@@ -334,6 +349,8 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
         if (isMounted) {
           setSessionToken(token);
           setMemberId(profile.member_id || claims.sub || "");
+          setMemberEmail(profile.email || "");
+          setMemberName(profile.full_name || "");
           const managerRole = isManagerRole(profile.role || claims.role);
           setIsManager(managerRole);
           if (!managerRole) {
@@ -361,8 +378,70 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     if (!memberId || !sessionToken) {
       return;
     }
-    void bootstrapApiData(memberId, sessionToken);
-  }, [bootstrapApiData, memberId, sessionToken]);
+    void bootstrapApiData(memberId, sessionToken, isManager);
+  }, [bootstrapApiData, isManager, memberId, sessionToken]);
+
+  const refreshOrderHistory = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!memberId || !sessionToken) {
+        return;
+      }
+      if (!options?.silent) {
+        clearMessages();
+      }
+      setHistoryLoading(true);
+
+      try {
+        if (isManager) {
+          const payload = await requestJson<MembersByDomainResponse>(apiBaseUrl, "/api/auth/members", {
+            headers: withAuthHeader(sessionToken),
+            cache: "no-store",
+          });
+          const members = Array.isArray(payload.members)
+            ? payload.members.filter((member) => (member.role || "").toUpperCase() === "MEMBER")
+            : [];
+          const memberOrders = await Promise.all(
+            members.map(async (member) => {
+              const orders = await fetchMemberOrders(member.member_id, sessionToken);
+              return orders.map((order) => ({
+                memberId: member.member_id,
+                memberEmail: member.email || "",
+                memberName: member.full_name || "",
+                order,
+              }));
+            }),
+          );
+          setOrderHistory(memberOrders.flat());
+        } else {
+          const memberOrders = await fetchMemberOrders(memberId, sessionToken);
+          setOrderHistory(
+            memberOrders.map((order) => ({
+              memberId,
+              memberEmail,
+              memberName,
+              order,
+            })),
+          );
+        }
+
+        if (!options?.silent) {
+          setStatusMessage("Order history refreshed.");
+        }
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Could not load orders.");
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [apiBaseUrl, clearMessages, fetchMemberOrders, isManager, memberEmail, memberId, memberName, sessionToken],
+  );
+
+  useEffect(() => {
+    if (viewMode !== "history") {
+      return;
+    }
+    void refreshOrderHistory({ silent: true });
+  }, [refreshOrderHistory, viewMode]);
 
   const addToCart = (vendorName: string, item: MenuItem) => {
     setCart((current) => {
@@ -437,7 +516,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       setStatusMessage(
         `Order ${responsePayload.order_id} created (${responsePayload.status}). Remaining credits: ${formatMoney(responsePayload.remaining_credits)}.`,
       );
-      await refreshOrders(memberId, sessionToken, { silent: true });
+      await refreshOrderHistory({ silent: true });
       return true;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Could not place order.");
@@ -582,9 +661,12 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     setGrantInternalNote,
     errorMessage,
     statusMessage,
+    historyLoading,
+    orderHistory,
     addToCart,
     updateCartQuantity,
     placeOrder,
+    refreshOrderHistory,
     grantCredits,
     grantCreditsToMember,
     lookupMembersByDomain,
