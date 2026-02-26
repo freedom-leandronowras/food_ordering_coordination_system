@@ -4,14 +4,32 @@ This document outlines the high-level design, technical patterns, and architectu
 
 ---
 
+## 📁 Project Structure & Decoupling
+
+The codebase is organized into three distinct top-level directories to ensure a clean separation of concerns and facilitate independent scaling and development.
+
+### 1. `web_ui/` (Frontend)
+*   **Purpose:** A modern **Next.js** application that serves as the primary user interface.
+*   **Rationale:** By isolating the UI, we can iterate on the user experience, styling, and client-side logic without redeploying the backend. It communicates with the API via standard HTTP/JSON, treating it as a black box.
+
+### 2. `coordination_api/` (Core Backend)
+*   **Purpose:** The central **Go** service responsible for business logic, persistence, and vendor aggregation.
+*   **Rationale:** Centralizing the "brain" of the system in a typed, high-performance language allows for robust transaction management and concurrent fan-out operations. This service maintains the source of truth for credits and orders.
+
+### 3. `external_services_mocks/` (Infrastructure Simulation)
+*   **Purpose:** Contains static JSON data and configurations used to simulate external vendor APIs (via `json-server`).
+*   **Rationale:** This decoupling allows for **Offline Development**. Developers can test the Aggregator and Adapter patterns without requiring access to live vendor systems, ensuring the coordination logic is resilient to various external responses.
+
+---
+
 ## 🏗️ Design/Architecture
 
 ### 1. High-Level System Flow
 1.  **Identity:** The **Web UI** authenticates the user via **Clerk**. The issued JWT contains the `member_id` (sub) and `role`.
 2.  **Discovery:** When a member opens the app, the UI calls `/api/menus`. The **Aggregator** triggers a **Fan-out** to all configured vendor **Adapters** concurrently.
 3.  **Aggregation:** The results are **Fanned-in**, normalized into a single schema, and returned to the UI.
-4.  **Transaction:** When an order is placed, the **Domain Service** performs a "Double Write": it updates the current **State** (credits/orders) for performance and appends an immutable **Event** for the audit trail.
-5.  **Integration:** The **Adapter** finally submits the order to the external vendor's system to close the loop.
+4.  **Transaction:** When an order is placed, the **Domain Service** performs a "Triple Write": it updates the current **Member Credits**, saves the **Food Order**, and appends an immutable **Event** to the audit trail.
+5.  **Integration:** While the **Aggregator** supports concurrent order submission to external vendor APIs, the current implementation focuses on internal state management and auditability.
 
 ---
 
@@ -24,7 +42,7 @@ This document outlines the high-level design, technical patterns, and architectu
 
 #### Fan-out/Fan-in Aggregator
 *   **Concurrent Execution:** Utilizes Go **Goroutines** to request menus from multiple vendors in parallel, preventing a "waterfall" delay where one slow vendor blocks the others.
-*   **Synchronization:** Employs `sync.WaitGroup` and thread-safe slices to collect results, ensuring the API response is only sent once all vendors have responded or timed out.
+*   **Synchronization:** Employs `sync.WaitGroup` and Go **Channels** for fan-in, ensuring the API response is only sent once all vendors have responded or timed out.
 *   **Fault Tolerance:** Implements per-vendor timeouts (10s); if one vendor fails, the aggregator returns a partial success with the remaining available menus.
 
 #### Adapter Pattern
@@ -32,8 +50,8 @@ This document outlines the high-level design, technical patterns, and architectu
 *   **Data Translation:** The `JSONServerAdapter` acts as a translator, converting external "Wire Types" (raw JSON) into internal **Domain Entities** to keep the core code clean and typed.
 
 #### Hybrid Persistence
-*   **Performance Reads:** Stores the latest "Snapshot" of credits and orders in dedicated MongoDB collections. This allows the UI to fetch history and balances with sub-millisecond latency.
-*   **Immutable Event Store:** Every mutation appends a record to the `events` collection. This provides a "Time Machine" for the system, allowing for perfect auditing of credit grants and order creation.
+*   **Performance Reads:** Stores the latest **Snapshots** for `credits` and `orders` in dedicated MongoDB collections. This allows the UI to fetch history and balances with sub-millisecond latency.
+*   **Immutable Event Store:** Every mutation (credit adjustments, order placement) appends a record to the `events` collection. This provides a "Time Machine" for the system, allowing for perfect auditing.
 *   **Future-Proofing:** By storing events today, the system is ready to migrate to **Full Event Sourcing** or trigger **Side-effects** (like email notifications) without changing the core repository.
 
 #### RBAC (Role-Based Access Control)
@@ -41,7 +59,7 @@ This document outlines the high-level design, technical patterns, and architectu
 *   **Granular Permissions:**
     *   `MEMBER`: Can view menus and place orders.
     *   `HIVE_MANAGER`: Can view all data and **Grant Credits** via protected POST endpoints.
-*   **Zero-Trust Identity:** The system derives the `member_id` directly from the secure JWT `sub` claim rather than trusting a user-provided ID in the request body.
+*   **Identity Validation:** The system validates that the `member_id` in the request body matches the secure JWT `sub` claim for non-managerial requests, ensuring a user can only perform actions on their own behalf.
 
 ---
 
@@ -53,10 +71,10 @@ The system treats **Events** as the source of truth for all state mutations.
     *   **Trigger:** When `PlaceOrderUseCase` successfully validates credits and saves a new order.
     *   **Payload:** A complete snapshot of the `FoodOrder` including `OrderID`, `MemberID`, itemized list with prices, and `TotalPrice`.
 *   **`credits.granted.v1`**
-    *   **Trigger:** When a `HIVE_MANAGER` manually adjusts a member's balance.
+    *   **Trigger:** When a manager (`HIVE_MANAGER`) manually adjusts a member's balance.
     *   **Payload:** Captures the `MemberID`, the `Amount` granted, and the resulting `NewBalance`.
 *   **Causal Metadata**
-    *   Every event includes a `CorrelationID` and `CausationID` to trace a single user action through every side-effect it triggered.
+    *   The event schema includes `CorrelationID` and `CausationID` to support future tracing of complex user-driven side-effects.
 
 ---
 
