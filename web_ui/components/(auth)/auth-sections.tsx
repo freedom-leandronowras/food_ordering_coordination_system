@@ -6,6 +6,7 @@ import { createContext, useContext, useMemo, useState, type FormEvent, type Reac
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { InlineFeedback } from "@/components/ui/inline-feedback";
 import { isEmailAllowedForDomains, parseAllowedEmailDomains } from "@/lib/auth-policy";
 import { parseJwtClaims, writeSessionToken } from "@/lib/auth-session";
 import { getApiErrorMessage } from "@/lib/menu-data";
@@ -300,15 +301,11 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
 
         <Card className="rounded-3xl border-sl-dce9e5 bg-sl-fbfdfc p-5">
           {authErrorMessage ? (
-            <Card className="mb-4 rounded-2xl border-sl-f0d1cf bg-sl-fff6f5 p-3 text-sm text-sl-8f352c">
-              {authErrorMessage}
-            </Card>
+            <InlineFeedback message={authErrorMessage} tone="error" className="mb-4" />
           ) : null}
 
           {authBlockedMessage ? (
-            <Card className="mb-4 rounded-2xl border-sl-f0d1cf bg-sl-fff6f5 p-3 text-sm text-sl-8f352c">
-              {authBlockedMessage}
-            </Card>
+            <InlineFeedback message={authBlockedMessage} tone="error" className="mb-4" />
           ) : null}
 
           {mode === "sign-up" && allowedDomains.length > 0 ? (
@@ -317,8 +314,8 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
             </Card>
           ) : null}
 
-          {status ? <p className="mb-3 text-sm text-sl-235f56">{status}</p> : null}
-          {error ? <p className="mb-3 text-sm text-sl-8f352c">{error}</p> : null}
+          {status ? <InlineFeedback message={status} tone="success" className="mb-3" /> : null}
+          {error ? <InlineFeedback message={error} tone="error" className="mb-3" /> : null}
 
           {mode === "sign-in" ? (
             <form className="space-y-3" onSubmit={onSignIn}>

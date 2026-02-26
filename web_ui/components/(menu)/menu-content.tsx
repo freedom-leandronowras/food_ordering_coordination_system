@@ -31,17 +31,19 @@ export function MenuContent({ sectionsData }: MenuContentProps) {
         header={<HeaderSection data={sectionsData.header} />}
         sidebar={<SidebarSection data={sectionsData.sidebar} />}
         main={
-          showingManagement ? (
-            <ManagementSection data={sectionsData.management} />
-          ) : (
-            <MainSection featured={sectionsData.featured} items={sectionsData.items} />
-          )
+          <div className="space-y-4">
+            <FeedbackSection />
+            {showingManagement ? (
+              <ManagementSection data={sectionsData.management} />
+            ) : (
+              <MainSection featured={sectionsData.featured} items={sectionsData.items} />
+            )}
+          </div>
         }
         aside={showingManagement ? null : <TraySection data={sectionsData.tray} />}
         mobileNav={<MobileNavSection data={sectionsData.mobileNav} />}
       />
 
-      <FeedbackSection />
       <DialogsSection data={sectionsData.dialogs} />
     </>
   );
