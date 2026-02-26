@@ -1,0 +1,34 @@
+name: food_ordering_coordination_system
+description: Local Kubernetes deployment for the Food Ordering Coordination System
+runtime: go
+config:
+  namespace:
+    description: Kubernetes namespace for the full application stack
+    default: food-ordering
+  imagePullPolicy:
+    description: Kubernetes image pull policy
+    default: IfNotPresent
+  apiImage:
+    description: Coordination API image tag
+    default: food-coordination-api:prod
+  webImage:
+    description: Web UI image tag
+    default: food-web-ui:prod
+  vendorImage:
+    description: Vendor mocks image tag
+    default: food-vendor-mocks:prod
+  mongoImage:
+    description: MongoDB image tag
+    default: mongo:7
+  webApiBaseUrl:
+    description: Public API base URL consumed by the browser in web-ui
+    default: http://127.0.0.1:18081
+  allowedEmailDomains:
+    description: Optional CSV list for frontend auth domain restrictions
+    default: ""
+  clerkPublishableKey:
+    description: Clerk publishable key for web-ui
+    secret: true
+  clerkSecretKey:
+    description: Clerk secret key for web-ui server/middleware
+    secret: true

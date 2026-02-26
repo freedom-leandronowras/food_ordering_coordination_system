@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import {
   AuthSections,
   type AuthSectionsData,
@@ -26,5 +28,9 @@ const authSectionsData: AuthSectionsData = {
 };
 
 export default function AuthPage() {
-  return <AuthSections data={authSectionsData} />;
+  return (
+    <Suspense fallback={null}>
+      <AuthSections data={authSectionsData} />
+    </Suspense>
+  );
 }

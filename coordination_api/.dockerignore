@@ -1,0 +1,6 @@
+.DS_Store
+.git
+.gitignore
+**/.DS_Store
+test
+internal/**/*_test.go
