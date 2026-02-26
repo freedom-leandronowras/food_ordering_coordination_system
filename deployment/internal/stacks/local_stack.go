@@ -51,6 +51,7 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 	jwtSigningKey := cfg.RequireSecret("jwtSigningKey")
 
 	allowedEmailDomains := cfg.Get("allowedEmailDomains")
+	authAllowSelfAssignRoles := cfg.GetBool("authAllowSelfAssignRoles")
 
 	namespace, err := corev1.NewNamespace(ctx, namespaceName, &corev1.NamespaceArgs{
 		Metadata: &metav1.ObjectMetaArgs{
@@ -171,7 +172,7 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 			"MONGODB_URI":                  pulumi.String("mongodb://mongodb:27017"),
 			"MONGODB_DATABASE":             pulumi.String("food_ordering"),
 			"VENDOR_URLS":                  pulumi.String(vendorURLs),
-			"AUTH_ALLOW_SELF_ASSIGN_ROLES": pulumi.String("true"),
+			"AUTH_ALLOW_SELF_ASSIGN_ROLES": pulumi.String(fmt.Sprintf("%t", authAllowSelfAssignRoles)),
 		},
 		SecretEnv: map[string]constructs.SecretEnvVar{
 			"JWT_SIGNING_KEY": {

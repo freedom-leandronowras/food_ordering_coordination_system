@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import { useMenuContext } from "@/components/(menu)/menu-context";
 import type { MenuSectionsData } from "@/components/(menu)/menu-section-types";
 import { Button } from "@/components/ui/button";
@@ -19,15 +21,15 @@ export function MainSection({ featured, items }: MainSectionProps) {
     : featured.description;
 
   return (
-    <div className="space-y-5">
-      <Card className="rounded-[28px] border-sl-d6e7e1 bg-gradient-to-r from-sl-123830 via-sl-1b5b52 to-sl-286e63 p-6 text-sl-ffffff">
+    <div className="space-y-5 motion-enter">
+      <Card className="motion-soft-scale rounded-[28px] border-sl-d6e7e1 bg-gradient-to-r from-sl-123830 via-sl-1b5b52 to-sl-286e63 p-6 text-sl-ffffff">
         <h2 className="text-3xl font-semibold leading-tight md:text-4xl">
           {selectedVendor?.service_name ?? "Loading vendor..."}
         </h2>
         <p className="mt-2 max-w-xl text-sm text-sl-d4ebe5">{featuredDescription}</p>
       </Card>
 
-      <Card className="p-4">
+      <Card className="motion-enter-delayed p-4">
         <div className="flex flex-wrap gap-2">
           {vendors.map((vendor) => (
             <Button
@@ -46,11 +48,15 @@ export function MainSection({ featured, items }: MainSectionProps) {
       <div className="space-y-3">
         <h3 className="text-2xl font-semibold md:text-3xl">{items.title}</h3>
         {isBootstrapping ? (
-          <Card className="p-5 text-sm text-sl-607b74">{items.loadingText}</Card>
+          <Card className="motion-enter p-5 text-sm text-sl-607b74">{items.loadingText}</Card>
         ) : (
           <div className="space-y-3">
-            {selectedVendor?.items.map((item) => (
-              <Card key={item.id} className="p-4">
+            {selectedVendor?.items.map((item, index) => (
+              <Card
+                key={item.id}
+                className="motion-stagger p-4"
+                style={{ "--stagger-index": index } as CSSProperties}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-semibold md:text-xl">{item.name}</p>

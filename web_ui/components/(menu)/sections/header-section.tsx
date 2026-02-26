@@ -15,7 +15,7 @@ export function HeaderSection({ data }: HeaderSectionProps) {
     useMenuContext();
 
   return (
-    <Card className="rounded-2xl border-sl-dce9e4 bg-sl-ffffff/95 px-4 py-3 backdrop-blur">
+    <Card className="motion-enter rounded-2xl border-sl-dce9e4 bg-sl-ffffff/95 px-4 py-3 backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">

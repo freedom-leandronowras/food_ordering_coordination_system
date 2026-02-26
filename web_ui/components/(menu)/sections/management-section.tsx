@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { useMenuContext } from "@/components/(menu)/menu-context";
 import type { MenuSectionsData } from "@/components/(menu)/menu-section-types";
@@ -102,8 +102,8 @@ export function ManagementSection({ data }: ManagementSectionProps) {
 
   return (
     <>
-      <div className="space-y-4">
-        <Card className="rounded-3xl border-sl-dce9e5 p-5">
+      <div className="space-y-4 motion-enter">
+        <Card className="motion-soft-scale rounded-3xl border-sl-dce9e5 p-5">
           <h2 className="text-2xl font-semibold">{data.title}</h2>
           <p className="mt-2 text-sm text-sl-5c746d">{data.description}</p>
         </Card>
@@ -116,14 +116,19 @@ export function ManagementSection({ data }: ManagementSectionProps) {
           <Card className="rounded-3xl border-sl-dce9e5 p-5 text-sm text-sl-607b74">{data.noResultsLabel}</Card>
         ) : (
           <div className="space-y-3">
-            {groupedMembers.map((group) => (
-              <Card key={group.domain} className="rounded-3xl border-sl-dce9e5 p-4">
+            {groupedMembers.map((group, groupIndex) => (
+              <Card
+                key={group.domain}
+                className="motion-stagger rounded-3xl border-sl-dce9e5 p-4"
+                style={{ "--stagger-index": groupIndex } as CSSProperties}
+              >
                 <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-sl-54726a">@{group.domain}</p>
                 <div className="space-y-3">
-                  {group.members.map((member) => (
+                  {group.members.map((member, memberIndex) => (
                     <Card
                       key={member.user_id}
-                      className="flex flex-col gap-3 rounded-3xl border-sl-dce9e5 p-4 lg:flex-row lg:items-end lg:justify-between"
+                      className="motion-stagger flex flex-col gap-3 rounded-3xl border-sl-dce9e5 p-4 lg:flex-row lg:items-end lg:justify-between"
+                      style={{ "--stagger-index": memberIndex + 1 } as CSSProperties}
                     >
                       <div>
                         <p className="text-lg font-semibold text-sl-1a4d45">{member.full_name}</p>

@@ -2,6 +2,15 @@ name: food_ordering_coordination_system
 description: Local Kubernetes deployment for the Food Ordering Coordination System
 runtime: go
 config:
+  stackMode:
+    description: Pulumi runtime mode. Use "local" for Kubernetes stack or "ec2-start" to only start an EC2 instance.
+    default: local
+  ec2InstanceId:
+    description: EC2 instance ID to control when stackMode=ec2-start
+    default: ""
+  awsRegion:
+    description: AWS region for ec2-start mode
+    default: us-east-1
   namespace:
     description: Kubernetes namespace for the full application stack
     default: food-ordering
@@ -26,6 +35,9 @@ config:
   allowedEmailDomains:
     description: Optional CSV list for frontend auth domain restrictions
     default: ""
+  authAllowSelfAssignRoles:
+    description: Whether /api/auth/register may assign manager roles
+    default: "false"
   jwtSigningKey:
     description: HMAC key used by coordination-api to sign and verify JWTs
     secret: true

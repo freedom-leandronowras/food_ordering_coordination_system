@@ -3,6 +3,11 @@ PULUMI_STACK = "local"
 K8S_NAMESPACE = "food-ordering"
 WEB_API_BASE_URL = "http://127.0.0.1:18081"
 PULUMI_CONFIG_PASSPHRASE = "local-dev-passphrase"
+PROD_STACK = "prod"
+PROD_K8S_NAMESPACE = "food-ordering"
+PROD_IMAGE_PULL_POLICY = "Always"
+PROD_MONGO_IMAGE = "mongo:7"
+PROD_AUTH_ALLOW_SELF_ASSIGN_ROLES = "false"
 
 [tasks.preflight]
 description = "Validate required local tools and env file"
@@ -139,7 +144,9 @@ fi
   pulumi config set apiImage "food-coordination-api:prod" && \
   pulumi config set webImage "food-web-ui:prod" && \
   pulumi config set vendorImage "food-vendor-mocks:prod" && \
+  pulumi config set mongoImage "${MONGO_IMAGE:-mongo:7}" && \
   pulumi config set imagePullPolicy "IfNotPresent" && \
+  pulumi config set authAllowSelfAssignRoles "${AUTH_ALLOW_SELF_ASSIGN_ROLES:-true}" && \
   pulumi config set --secret jwtSigningKey "$JWT_SIGNING_KEY" && \
   pulumi config set allowedEmailDomains "$ALLOWED_EMAIL_DOMAINS")
 '''
@@ -257,6 +264,239 @@ kubectl -n "${K8S_NAMESPACE}" get deployments,pods,svc
 description = "Atomic local deployment pipeline (build, deploy, verify)"
 depends = ["smoke"]
 run = 'echo "Local deployment completed"'
+
+[tasks.prod-preflight]
+description = "Validate production deployment inputs for Pulumi on Kubernetes"
+run = '''
+set -euo pipefail
+
+ROOT_DIR="$(pwd)"
+WEB_ENV_FILE="${WEB_ENV_FILE:-$ROOT_DIR/web_ui/.env.local}"
+
+require_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Missing required command: $cmd" >&2
+    exit 1
+  fi
+}
+
+require_var() {
+  local key="$1"
+  local value="${!key:-}"
+  if [[ -z "$value" ]]; then
+    echo "Missing required env var: $key" >&2
+    exit 1
+  fi
+}
+
+require_cmd docker
+require_cmd kubectl
+require_cmd pulumi
+require_cmd curl
+
+require_var PROD_API_IMAGE
+require_var PROD_WEB_IMAGE
+require_var PROD_VENDOR_IMAGE
+require_var PROD_WEB_API_BASE_URL
+
+JWT_CANDIDATE="${PROD_JWT_SIGNING_KEY:-}"
+if [[ -z "$JWT_CANDIDATE" && -f "$WEB_ENV_FILE" ]]; then
+  JWT_CANDIDATE="$(awk -F= '$1 == "JWT_SIGNING_KEY" {print substr($0, index($0, "=")+1)}' "$WEB_ENV_FILE" | tail -n 1 | sed -e 's/^"//' -e 's/"$//')"
+fi
+
+if [[ -z "$JWT_CANDIDATE" ]]; then
+  echo "Provide PROD_JWT_SIGNING_KEY (or JWT_SIGNING_KEY in $WEB_ENV_FILE)." >&2
+  exit 1
+fi
+
+echo "Production preflight OK"
+'''
+
+[tasks.kube-check-prod]
+description = "Validate production Kubernetes connectivity"
+depends = ["prod-preflight"]
+run = '''
+set -euo pipefail
+kubectl cluster-info >/dev/null
+echo "Production Kubernetes connectivity OK"
+'''
+
+[tasks.build-api-image-prod]
+description = "Build production coordination API image"
+depends = ["prod-preflight"]
+run = '''
+set -euo pipefail
+ROOT_DIR="$(pwd)"
+docker build -t "${PROD_API_IMAGE}" "$ROOT_DIR/coordination_api"
+'''
+
+[tasks.build-vendor-image-prod]
+description = "Build production vendor mocks image"
+depends = ["prod-preflight"]
+run = '''
+set -euo pipefail
+ROOT_DIR="$(pwd)"
+docker build -t "${PROD_VENDOR_IMAGE}" "$ROOT_DIR/external_services_mocks"
+'''
+
+[tasks.build-web-image-prod]
+description = "Build production web UI image with production API URL"
+depends = ["prod-preflight"]
+run = '''
+set -euo pipefail
+
+ROOT_DIR="$(pwd)"
+WEB_ENV_FILE="${WEB_ENV_FILE:-$ROOT_DIR/web_ui/.env.local}"
+
+ALLOWED_EMAIL_DOMAINS="${PROD_ALLOWED_EMAIL_DOMAINS:-}"
+if [[ -z "$ALLOWED_EMAIL_DOMAINS" && -f "$WEB_ENV_FILE" ]]; then
+  ALLOWED_EMAIL_DOMAINS="$(awk -F= '$1 == "NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS" {print substr($0, index($0, "=")+1)}' "$WEB_ENV_FILE" | tail -n 1 | sed -e 's/^"//' -e 's/"$//')"
+fi
+
+docker build \
+  -t "${PROD_WEB_IMAGE}" \
+  --build-arg NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS="$ALLOWED_EMAIL_DOMAINS" \
+  --build-arg NEXT_PUBLIC_API_BASE_URL="${PROD_WEB_API_BASE_URL}" \
+  "$ROOT_DIR/web_ui"
+'''
+
+[tasks.build-images-prod]
+description = "Build all production images"
+depends = ["build-api-image-prod", "build-vendor-image-prod", "build-web-image-prod"]
+run = 'echo "Production image build stage complete"'
+
+[tasks.push-api-image-prod]
+description = "Push production API image"
+depends = ["build-api-image-prod"]
+run = '''
+set -euo pipefail
+docker push "${PROD_API_IMAGE}"
+'''
+
+[tasks.push-vendor-image-prod]
+description = "Push production vendor image"
+depends = ["build-vendor-image-prod"]
+run = '''
+set -euo pipefail
+docker push "${PROD_VENDOR_IMAGE}"
+'''
+
+[tasks.push-web-image-prod]
+description = "Push production web image"
+depends = ["build-web-image-prod"]
+run = '''
+set -euo pipefail
+docker push "${PROD_WEB_IMAGE}"
+'''
+
+[tasks.push-images-prod]
+description = "Push all production images"
+depends = ["push-api-image-prod", "push-vendor-image-prod", "push-web-image-prod"]
+run = 'echo "Production image push stage complete"'
+
+[tasks.pulumi-stack-prod]
+description = "Select or create production Pulumi stack"
+depends = ["pulumi-login", "prod-preflight"]
+run = '''
+set -euo pipefail
+ROOT_DIR="$(pwd)"
+DEPLOY_DIR="$ROOT_DIR/deployment"
+(cd "$DEPLOY_DIR" && pulumi stack select "${PROD_STACK}" --create)
+'''
+
+[tasks.pulumi-config-prod]
+description = "Set Pulumi config values for production Kubernetes deployment"
+depends = ["pulumi-stack-prod"]
+run = '''
+set -euo pipefail
+
+ROOT_DIR="$(pwd)"
+DEPLOY_DIR="$ROOT_DIR/deployment"
+WEB_ENV_FILE="${WEB_ENV_FILE:-$ROOT_DIR/web_ui/.env.local}"
+
+JWT_SIGNING_KEY="${PROD_JWT_SIGNING_KEY:-}"
+if [[ -z "$JWT_SIGNING_KEY" && -f "$WEB_ENV_FILE" ]]; then
+  JWT_SIGNING_KEY="$(awk -F= '$1 == "JWT_SIGNING_KEY" {print substr($0, index($0, "=")+1)}' "$WEB_ENV_FILE" | tail -n 1 | sed -e 's/^"//' -e 's/"$//')"
+fi
+
+if [[ -z "$JWT_SIGNING_KEY" ]]; then
+  echo "Missing PROD_JWT_SIGNING_KEY (or JWT_SIGNING_KEY in $WEB_ENV_FILE)." >&2
+  exit 1
+fi
+
+ALLOWED_EMAIL_DOMAINS="${PROD_ALLOWED_EMAIL_DOMAINS:-}"
+if [[ -z "$ALLOWED_EMAIL_DOMAINS" && -f "$WEB_ENV_FILE" ]]; then
+  ALLOWED_EMAIL_DOMAINS="$(awk -F= '$1 == "NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS" {print substr($0, index($0, "=")+1)}' "$WEB_ENV_FILE" | tail -n 1 | sed -e 's/^"//' -e 's/"$//')"
+fi
+
+(cd "$DEPLOY_DIR" && \
+  pulumi config set namespace "${PROD_K8S_NAMESPACE}" && \
+  pulumi config set webApiBaseUrl "${PROD_WEB_API_BASE_URL}" && \
+  pulumi config set apiImage "${PROD_API_IMAGE}" && \
+  pulumi config set webImage "${PROD_WEB_IMAGE}" && \
+  pulumi config set vendorImage "${PROD_VENDOR_IMAGE}" && \
+  pulumi config set mongoImage "${PROD_MONGO_IMAGE}" && \
+  pulumi config set imagePullPolicy "${PROD_IMAGE_PULL_POLICY}" && \
+  pulumi config set authAllowSelfAssignRoles "${PROD_AUTH_ALLOW_SELF_ASSIGN_ROLES}" && \
+  pulumi config set --secret jwtSigningKey "$JWT_SIGNING_KEY" && \
+  pulumi config set allowedEmailDomains "$ALLOWED_EMAIL_DOMAINS")
+'''
+
+[tasks.pulumi-up-prod]
+description = "Run pulumi up for production stack"
+depends = ["kube-check-prod", "push-images-prod", "pulumi-config-prod"]
+run = '''
+set -euo pipefail
+ROOT_DIR="$(pwd)"
+DEPLOY_DIR="$ROOT_DIR/deployment"
+(cd "$DEPLOY_DIR" && pulumi up -y)
+'''
+
+[tasks.rollout-prod]
+description = "Wait for production deployments to become ready"
+depends = ["pulumi-up-prod"]
+run = '''
+set -euo pipefail
+NAMESPACE="${PROD_K8S_NAMESPACE}"
+kubectl -n "$NAMESPACE" rollout status deployment/mongodb --timeout=360s
+kubectl -n "$NAMESPACE" rollout status deployment/vendor-pizza --timeout=360s
+kubectl -n "$NAMESPACE" rollout status deployment/vendor-sushi --timeout=360s
+kubectl -n "$NAMESPACE" rollout status deployment/vendor-taco --timeout=360s
+kubectl -n "$NAMESPACE" rollout status deployment/coordination-api --timeout=360s
+kubectl -n "$NAMESPACE" rollout status deployment/web-ui --timeout=360s
+'''
+
+[tasks.smoke-prod]
+description = "Production smoke check against configured public API URL"
+depends = ["rollout-prod"]
+run = '''
+set -euo pipefail
+
+API_VENDORS_URL="${PROD_WEB_API_BASE_URL%/}/api/vendors"
+PAYLOAD="$(curl -fsS "$API_VENDORS_URL")"
+VENDOR_COUNT="$(printf '%s' "$PAYLOAD" | tr -d '\n' | grep -o 'service_id' | wc -l | tr -d ' ')"
+
+if [[ "$VENDOR_COUNT" -lt 3 ]]; then
+  echo "Smoke test failed: expected at least 3 vendors, got $VENDOR_COUNT" >&2
+  exit 1
+fi
+
+echo "Production smoke checks passed"
+echo "API vendors endpoint: $API_VENDORS_URL"
+'''
+
+[tasks.status-prod]
+description = "Show Kubernetes status for production stack resources"
+run = '''
+set -euo pipefail
+kubectl -n "${PROD_K8S_NAMESPACE}" get deployments,pods,svc
+'''
+
+[tasks.deploy-production]
+description = "Atomic production deployment pipeline for EC2 Kubernetes (build, push, Pulumi deploy, rollout, smoke)"
+depends = ["smoke-prod"]
+run = 'echo "Production deployment completed"'
 
 [tasks.dev-local]
 description = "Run web, API, and vendor mocks locally with live reload on localhost:3000"

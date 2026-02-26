@@ -27,6 +27,27 @@ The `mise` task will:
 4. Run rollout checks.
 5. Run smoke tests using temporary `kubectl port-forward` sessions.
 
+## One-command production deploy (EC2 Kubernetes)
+
+From repository root:
+
+```bash
+PROD_API_IMAGE=<registry>/food-coordination-api:<tag> \
+PROD_WEB_IMAGE=<registry>/food-web-ui:<tag> \
+PROD_VENDOR_IMAGE=<registry>/food-vendor-mocks:<tag> \
+PROD_WEB_API_BASE_URL=https://<api-domain> \
+PROD_JWT_SIGNING_KEY=<strong-secret> \
+mise run deploy-production
+```
+
+The production pipeline will:
+1. Build images from each service Dockerfile.
+2. Push images to your registry.
+3. Configure Pulumi production stack values.
+4. Deploy resources to Kubernetes with `pulumi up`.
+5. Run rollout checks.
+6. Run a smoke check against `${PROD_WEB_API_BASE_URL}/api/vendors`.
+
 ## Atomic tasks
 
 Run each phase independently:
@@ -52,6 +73,17 @@ Main atomic tasks:
 - `status` - Show deployments/pods/services.
 - `port-forward-api`
 - `port-forward-web`
+- `prod-preflight` - Validate production deployment env + tools.
+- `kube-check-prod` - Validate production cluster connectivity.
+- `build-images-prod` - Build all production images.
+- `push-images-prod` - Push all production images.
+- `pulumi-stack-prod`
+- `pulumi-config-prod`
+- `pulumi-up-prod`
+- `rollout-prod`
+- `smoke-prod` - Check production API endpoint.
+- `status-prod`
+- `deploy-production` - Runs production pipeline end-to-end.
 
 ## Local live development
 

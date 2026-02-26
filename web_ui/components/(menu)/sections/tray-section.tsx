@@ -24,7 +24,7 @@ export function TraySection({ data }: TraySectionProps) {
   } = useMenuContext();
 
   return (
-    <Card className="rounded-3xl p-4">
+    <Card className="motion-enter-delayed rounded-3xl p-4">
       <CardHeader className="mb-2 p-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">{data.title}</CardTitle>

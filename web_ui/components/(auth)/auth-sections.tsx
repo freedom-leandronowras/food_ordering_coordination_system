@@ -137,8 +137,8 @@ function AuthSectionsProvider({ children, data }: { children: ReactNode; data: A
 
 function AuthHeroSection({ data }: { data: AuthSectionsData }) {
   return (
-    <section className="relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-sl-d7ebe6 via-sl-cce4de to-sl-bdd9d2 p-10 lg:flex lg:flex-col lg:justify-between">
-      <div className="flex items-center gap-3">
+    <section className="motion-enter relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-sl-d7ebe6 via-sl-cce4de to-sl-bdd9d2 p-10 lg:flex lg:flex-col lg:justify-between">
+      <div className="motion-enter-delayed flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">#</div>
         <div>
           <p className="text-xl font-semibold text-sl-123830">{data.brand.name}</p>
@@ -146,7 +146,7 @@ function AuthHeroSection({ data }: { data: AuthSectionsData }) {
         </div>
       </div>
 
-      <Card className="mx-auto w-full max-w-[540px] rounded-[36px] border-0 bg-gradient-to-br from-sl-1a5148 via-sl-23665a to-sl-2b7367 p-8 text-sl-ffffff shadow-2xl">
+      <Card className="motion-soft-scale mx-auto w-full max-w-[540px] rounded-[36px] border-0 bg-gradient-to-br from-sl-1a5148 via-sl-23665a to-sl-2b7367 p-8 text-sl-ffffff shadow-2xl">
         <p className="text-xs uppercase tracking-[0.18em] text-sl-c8e6dd">{data.hero.badge}</p>
         <h2 className="mt-4 text-4xl font-semibold leading-tight">{data.hero.title}</h2>
         <p className="mt-3 max-w-sm text-sm text-sl-d9eee8">{data.hero.description}</p>
@@ -270,7 +270,7 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
   };
 
   return (
-    <section className="w-full bg-sl-ffffff p-5 md:p-10 lg:w-[48%] lg:p-12">
+    <section className="motion-enter w-full bg-sl-ffffff p-5 md:p-10 lg:w-[48%] lg:p-12">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-6 flex items-center gap-3 lg:hidden">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">#</div>
@@ -299,7 +299,7 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
           </Button>
         </div>
 
-        <Card className="rounded-3xl border-sl-dce9e5 bg-sl-fbfdfc p-5">
+        <Card className="motion-enter-delayed rounded-3xl border-sl-dce9e5 bg-sl-fbfdfc p-5">
           {authErrorMessage ? (
             <InlineFeedback message={authErrorMessage} tone="error" className="mb-4" />
           ) : null}
