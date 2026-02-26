@@ -9,7 +9,7 @@ const authSectionsData: AuthSectionsData = {
   brand: {
     name: "SoftLunch",
     tagline: "Fuel for your best work",
-    versionLabel: "Internal Platform v2.4",
+    versionLabel: "",
   },
   hero: {
     badge: "Trending today",

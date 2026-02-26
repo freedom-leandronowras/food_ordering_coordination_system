@@ -21,17 +21,25 @@ var domainPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-
 
 type AuthController struct {
 	users                persistence.UserRepository
+	credits              persistence.CreditRepository
 	authenticator        *Authenticator
 	tokenTTL             time.Duration
 	allowSelfAssignRoles bool
 }
 
-func NewAuthController(users persistence.UserRepository, authenticator *Authenticator, tokenTTL time.Duration, allowSelfAssignRoles bool) *AuthController {
+func NewAuthController(
+	users persistence.UserRepository,
+	credits persistence.CreditRepository,
+	authenticator *Authenticator,
+	tokenTTL time.Duration,
+	allowSelfAssignRoles bool,
+) *AuthController {
 	if tokenTTL <= 0 {
 		tokenTTL = time.Hour
 	}
 	return &AuthController{
 		users:                users,
+		credits:              credits,
 		authenticator:        authenticator,
 		tokenTTL:             tokenTTL,
 		allowSelfAssignRoles: allowSelfAssignRoles,
@@ -112,9 +120,10 @@ func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	credits := c.loadCredits(user.MemberID)
 	writeJSON(w, http.StatusCreated, authSessionResponse{
 		Token: token,
-		User:  toAuthUserResponse(user),
+		User:  toAuthUserResponse(user, credits),
 	})
 }
 
@@ -159,9 +168,10 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	credits := c.loadCredits(user.MemberID)
 	writeJSON(w, http.StatusOK, authSessionResponse{
 		Token: token,
-		User:  toAuthUserResponse(user),
+		User:  toAuthUserResponse(user, credits),
 	})
 }
 
@@ -181,7 +191,8 @@ func (c *AuthController) Me(w http.ResponseWriter, _ *http.Request, auth AuthCla
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toAuthUserResponse(user))
+	credits := c.loadCredits(user.MemberID)
+	writeJSON(w, http.StatusOK, toAuthUserResponse(user, credits))
 }
 
 func (c *AuthController) ListMembersByDomain(w http.ResponseWriter, r *http.Request, _ AuthClaims) {
@@ -191,12 +202,20 @@ func (c *AuthController) ListMembersByDomain(w http.ResponseWriter, r *http.Requ
 	}
 
 	domain := normalizeDomainValue(r.URL.Query().Get("domain"))
-	if domain == "" || !domainPattern.MatchString(domain) {
+	if domain != "" && !domainPattern.MatchString(domain) {
 		writeError(w, http.StatusBadRequest, "INVALID_DOMAIN", "domain query is invalid")
 		return
 	}
 
-	users, err := c.users.ListUsersByEmailDomain(domain)
+	var (
+		users []persistence.User
+		err   error
+	)
+	if domain == "" {
+		users, err = c.users.ListUsers()
+	} else {
+		users, err = c.users.ListUsersByEmailDomain(domain)
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "could not query members")
 		return
@@ -204,7 +223,7 @@ func (c *AuthController) ListMembersByDomain(w http.ResponseWriter, r *http.Requ
 
 	members := make([]authUserResponse, 0, len(users))
 	for _, user := range users {
-		members = append(members, toAuthUserResponse(user))
+		members = append(members, toAuthUserResponse(user, c.loadCredits(user.MemberID)))
 	}
 
 	writeJSON(w, http.StatusOK, membersByDomainResponse{
@@ -242,14 +261,27 @@ func isSupportedRole(role string) bool {
 	}
 }
 
-func toAuthUserResponse(user persistence.User) authUserResponse {
+func toAuthUserResponse(user persistence.User, credits float64) authUserResponse {
 	return authUserResponse{
 		UserID:   user.UserID.String(),
 		MemberID: user.MemberID.String(),
 		Email:    normalizeEmailAddress(user.Email),
 		FullName: strings.TrimSpace(user.FullName),
 		Role:     normalizeRoleValue(user.Role),
+		Credits:  credits,
 	}
+}
+
+func (c *AuthController) loadCredits(memberID uuid.UUID) float64 {
+	if c == nil || c.credits == nil {
+		return 0
+	}
+
+	credits, found, err := c.credits.Get(memberID)
+	if err != nil || !found {
+		return 0
+	}
+	return credits
 }
 
 func isDuplicateKeyError(err error) bool {

@@ -57,6 +57,7 @@ export type ManagedMember = {
   email: string;
   full_name: string;
   role: string;
+  credits: number;
 };
 
 export type MembersByDomainResponse = {
@@ -70,6 +71,7 @@ export type AuthenticatedMember = {
   email: string;
   full_name: string;
   role: string;
+  credits: number;
 };
 
 export function formatMoney(value: number) {

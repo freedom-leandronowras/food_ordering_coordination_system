@@ -46,7 +46,7 @@ func main() {
 
 	service := domain.NewFoodOrderingService(repo, repo, repo)
 	authenticator := httpapi.NewAuthenticator(cfg.JWTSigningKey)
-	authController := httpapi.NewAuthController(repo, authenticator, cfg.AuthTokenTTL, cfg.AuthAllowSelfAssignRoles)
+	authController := httpapi.NewAuthController(repo, repo, authenticator, cfg.AuthTokenTTL, cfg.AuthAllowSelfAssignRoles)
 	router := httpapi.NewFoodOrderingRouterWithAuth(service, aggregator, authController, cfg.JWTSigningKey)
 
 	log.Printf(

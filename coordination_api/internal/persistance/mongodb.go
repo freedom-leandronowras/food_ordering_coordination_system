@@ -311,6 +311,38 @@ func (r *MongoRepository) ListUsersByEmailDomain(domain string) ([]User, error) 
 	return users, nil
 }
 
+func (r *MongoRepository) ListUsers() ([]User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := r.db.Collection(usersCollection).Find(
+		ctx,
+		bson.M{},
+		options.Find().SetSort(bson.D{{Key: "email", Value: 1}}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	users := []User{}
+	for cursor.Next(ctx) {
+		var doc userDocument
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, err
+		}
+		user, err := doc.toUser()
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 type userDocument struct {
 	ID           string    `bson:"id"`
 	MemberID     string    `bson:"member_id"`

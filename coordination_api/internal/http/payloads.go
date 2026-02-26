@@ -85,11 +85,12 @@ type loginRequest struct {
 }
 
 type authUserResponse struct {
-	UserID   string `json:"user_id"`
-	MemberID string `json:"member_id"`
-	Email    string `json:"email"`
-	FullName string `json:"full_name"`
-	Role     string `json:"role"`
+	UserID   string  `json:"user_id"`
+	MemberID string  `json:"member_id"`
+	Email    string  `json:"email"`
+	FullName string  `json:"full_name"`
+	Role     string  `json:"role"`
+	Credits  float64 `json:"credits"`
 }
 
 type authSessionResponse struct {

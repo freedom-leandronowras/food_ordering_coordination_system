@@ -14,15 +14,17 @@ type MainSectionProps = {
 export function MainSection({ featured, items }: MainSectionProps) {
   const { isBootstrapping, selectedVendor, vendors, selectedVendorId, selectVendor, addToCart } =
     useMenuContext();
+  const featuredDescription = selectedVendor
+    ? featured.vendorDescriptions[selectedVendor.service_name] ?? `Popular picks from ${selectedVendor.service_name}.`
+    : featured.description;
 
   return (
     <div className="space-y-5">
       <Card className="rounded-[28px] border-[#d6e7e1] bg-gradient-to-r from-[#123830] via-[#1b5b52] to-[#286e63] p-6 text-white">
-        <p className="text-xs uppercase tracking-wide text-[#b6ddd2]">{featured.label}</p>
-        <h2 className="mt-3 text-3xl font-semibold leading-tight md:text-4xl">
+        <h2 className="text-3xl font-semibold leading-tight md:text-4xl">
           {selectedVendor?.service_name ?? "Loading vendor..."}
         </h2>
-        <p className="mt-2 max-w-xl text-sm text-[#d4ebe5]">{featured.description}</p>
+        <p className="mt-2 max-w-xl text-sm text-[#d4ebe5]">{featuredDescription}</p>
       </Card>
 
       <Card className="p-4">
@@ -63,7 +65,7 @@ export function MainSection({ featured, items }: MainSectionProps) {
                       className="mt-3"
                       size="sm"
                     >
-                      {item.available ? "Add to tray" : "Unavailable"}
+                      {item.available ? "Add to card" : "Unavailable"}
                     </Button>
                   </div>
                 </div>

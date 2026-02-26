@@ -154,7 +154,7 @@ function AuthHeroSection({ data }: { data: AuthSectionsData }) {
         </div>
       </Card>
 
-      <p className="text-xs text-[#5e7c75]">{data.brand.versionLabel}</p>
+      {data.brand.versionLabel ? <p className="text-xs text-[#5e7c75]">{data.brand.versionLabel}</p> : null}
     </section>
   );
 }
@@ -397,7 +397,6 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
                 >
                   <option value="MEMBER">Member</option>
                   <option value="HIVE_MANAGER">Hive Manager</option>
-                  <option value="INNOVATION_LEAD">Innovation Lead</option>
                 </select>
               </label>
 

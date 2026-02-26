@@ -30,7 +30,6 @@ export function HeaderSection({ data }: HeaderSectionProps) {
         <div className="flex items-center gap-2">
           {isManager ? (
             <div className="flex items-center gap-2 rounded-full border border-[#dbe9e4] bg-white p-1">
-              <span className="px-2 text-xs text-[#617b74]">{data.viewLabel}</span>
               <Button
                 type="button"
                 size="sm"

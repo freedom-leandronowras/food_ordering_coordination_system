@@ -8,7 +8,6 @@ const menuSectionsData: MenuSectionsData = {
     brandName: "SoftLunch",
     subtitle: "Menu",
     addCreditsButtonLabel: "Add credits",
-    viewLabel: "View",
     menuViewLabel: "Menu",
     managementViewLabel: "Management",
   },
@@ -17,9 +16,12 @@ const menuSectionsData: MenuSectionsData = {
     items: ["GF = Gluten free", "V = Vegan", "VG = Vegetarian"],
   },
   featured: {
-    label: "Featured vendor",
-    description:
-      "Curated menus and team stipend ordering. Reserve before 11:30 AM.",
+    description: "Pick a vendor to browse today's menu.",
+    vendorDescriptions: {
+      "Bella Napoli Pizzeria": "Wood-fired Neapolitan pizzas with classic Italian toppings.",
+      "Sakura Sushi Bar": "Fresh sushi, sashimi, and rolls prepared to order.",
+      "El Fuego Taco Truck": "Street-style tacos, burritos, and quesadillas with bold flavor.",
+    },
   },
   items: {
     title: "Popular Items",
@@ -30,7 +32,7 @@ const menuSectionsData: MenuSectionsData = {
     emptyText: "Your tray is looking empty.",
     reserveLabel: "Reserve Lunch",
     submittingLabel: "Submitting...",
-    deadlineText: "Order by 11:30 AM for 12:15 PM delivery.",
+    deadlineText: "",
     subtotalLabel: "Subtotal",
     companyCreditLabel: "Company credit",
     totalPayLabel: "Total pay",
@@ -64,12 +66,12 @@ const menuSectionsData: MenuSectionsData = {
   management: {
     title: "Member Management",
     description:
-      "Search members by email domain and grant credits to the selected member account.",
+      "Members are grouped by email domain by default. Optionally filter by domain and grant credits to a selected member account.",
     domainLabel: "Email domain",
     domainPlaceholder: "company.com",
     searchLabel: "Find members",
     searchingLabel: "Searching...",
-    noResultsLabel: "No members loaded yet. Search by domain to start.",
+    noResultsLabel: "No members found for the current filter.",
     memberIdLabel: "Member ID",
     grantAmountLabel: "Credits",
     grantLabel: "Grant credits",

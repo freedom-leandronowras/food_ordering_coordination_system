@@ -3,7 +3,6 @@ export type MenuSectionsData = {
     brandName: string;
     subtitle: string;
     addCreditsButtonLabel: string;
-    viewLabel: string;
     menuViewLabel: string;
     managementViewLabel: string;
   };
@@ -12,8 +11,8 @@ export type MenuSectionsData = {
     items: string[];
   };
   featured: {
-    label: string;
     description: string;
+    vendorDescriptions: Record<string, string>;
   };
   items: {
     title: string;

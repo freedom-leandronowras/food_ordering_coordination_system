@@ -160,10 +160,66 @@ func TestAuthManagerCanLookupMembersByDomain(t *testing.T) {
 	}
 }
 
+func TestAuthManagerCanListAllMembersWithoutDomainFilter(t *testing.T) {
+	env := newTestEnv(t)
+	defer env.close()
+
+	router := newAuthRouterForEnv(env, true)
+
+	managerRec := executeJSONRequestNoAuth(t, router, http.MethodPost, "/api/auth/register", map[string]any{
+		"email":     "lead@acme.io",
+		"password":  "password123",
+		"full_name": "Lead",
+		"role":      httpapi.RoleInnovationLead,
+	})
+	if managerRec.Code != http.StatusCreated {
+		t.Fatalf("expected %d, got %d body=%s", http.StatusCreated, managerRec.Code, managerRec.Body.String())
+	}
+
+	var managerResp struct {
+		Token string `json:"token"`
+	}
+	decodeResponse(t, managerRec, &managerResp)
+
+	for _, email := range []string{"alice@acme.io", "bob@acme.io", "user@other.io"} {
+		rec := executeJSONRequestNoAuth(t, router, http.MethodPost, "/api/auth/register", map[string]any{
+			"email":     email,
+			"password":  "password123",
+			"full_name": "Member",
+		})
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("register %s failed: status=%d body=%s", email, rec.Code, rec.Body.String())
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/members", nil)
+	req.Header.Set("Authorization", "Bearer "+managerResp.Token)
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected %d, got %d body=%s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	var response struct {
+		Domain  string `json:"domain"`
+		Members []struct {
+			Email string `json:"email"`
+		} `json:"members"`
+	}
+	decodeResponse(t, rec, &response)
+	if response.Domain != "" {
+		t.Fatalf("expected empty domain for unfiltered list, got %q", response.Domain)
+	}
+	if len(response.Members) != 4 {
+		t.Fatalf("expected 4 members total, got %d", len(response.Members))
+	}
+}
+
 func newAuthRouterForEnv(env *testEnv, allowSelfAssignRoles bool) http.Handler {
 	service := domain.NewFoodOrderingService(env.repo, env.repo, env.repo)
 	authenticator := httpapi.NewAuthenticator(testJWTSigningKey)
-	authController := httpapi.NewAuthController(env.repo, authenticator, time.Hour, allowSelfAssignRoles)
+	authController := httpapi.NewAuthController(env.repo, env.repo, authenticator, time.Hour, allowSelfAssignRoles)
 	return httpapi.NewFoodOrderingRouterWithAuth(service, nil, authController, testJWTSigningKey)
 }
 

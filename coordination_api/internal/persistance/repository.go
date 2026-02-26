@@ -31,5 +31,6 @@ type UserRepository interface {
 	CreateUser(user User) error
 	FindUserByEmail(email string) (User, bool, error)
 	FindUserByMemberID(memberID uuid.UUID) (User, bool, error)
+	ListUsers() ([]User, error)
 	ListUsersByEmailDomain(domain string) ([]User, error)
 }

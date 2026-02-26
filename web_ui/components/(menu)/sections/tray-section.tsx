@@ -68,7 +68,7 @@ export function TraySection({ data }: TraySectionProps) {
         <Button type="button" onClick={() => setShowConfirmModal(true)} disabled={!canReserve} className="w-full">
           {placingOrder ? data.submittingLabel : data.reserveLabel}
         </Button>
-        <p className="text-center text-xs text-[#6f8680]">{data.deadlineText}</p>
+        {data.deadlineText ? <p className="text-center text-xs text-[#6f8680]">{data.deadlineText}</p> : null}
       </CardContent>
     </Card>
   );

@@ -519,22 +519,26 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       }
 
       const normalizedDomain = normalizeDomain(domain);
-      if (!normalizedDomain || !isValidDomain(normalizedDomain)) {
+      if (normalizedDomain && !isValidDomain(normalizedDomain)) {
         setErrorMessage("Please enter a valid email domain.");
         return [];
       }
 
+      const path = normalizedDomain
+        ? `/api/auth/members?domain=${encodeURIComponent(normalizedDomain)}`
+        : "/api/auth/members";
+
       try {
-        const payload = await requestJson<MembersByDomainResponse>(
-          apiBaseUrl,
-          `/api/auth/members?domain=${encodeURIComponent(normalizedDomain)}`,
-          {
-            headers: withAuthHeader(sessionToken),
-            cache: "no-store",
-          },
-        );
+        const payload = await requestJson<MembersByDomainResponse>(apiBaseUrl, path, {
+          headers: withAuthHeader(sessionToken),
+          cache: "no-store",
+        });
         const members = Array.isArray(payload.members) ? payload.members : [];
-        setStatusMessage(`Loaded ${members.length} member(s) for ${payload.domain}.`);
+        if (payload.domain) {
+          setStatusMessage(`Loaded ${members.length} member(s) for ${payload.domain}.`);
+        } else {
+          setStatusMessage(`Loaded ${members.length} member(s) across all domains.`);
+        }
         return members;
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Could not load members by domain.");
