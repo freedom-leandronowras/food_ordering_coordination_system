@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	persistence "food_ordering_coordination_system/internal/persistance"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,15 +21,39 @@ type DBConfig struct {
 }
 
 type AppConfig struct {
-	Port       string
-	VendorURLs string
-	DB         DBConfig
+	Port                     string
+	VendorURLs               string
+	JWTSigningKey            string
+	AuthTokenTTL             time.Duration
+	AuthAllowSelfAssignRoles bool
+	DB                       DBConfig
 }
 
 func LoadFromEnv() (AppConfig, error) {
+	tokenTTLSeconds := int64(3600)
+	if raw := strings.TrimSpace(os.Getenv("AUTH_TOKEN_TTL_SECONDS")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed <= 0 {
+			return AppConfig{}, errors.New("AUTH_TOKEN_TTL_SECONDS must be a positive integer")
+		}
+		tokenTTLSeconds = parsed
+	}
+
+	allowSelfAssignRoles := false
+	if raw := strings.TrimSpace(os.Getenv("AUTH_ALLOW_SELF_ASSIGN_ROLES")); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			return AppConfig{}, errors.New("AUTH_ALLOW_SELF_ASSIGN_ROLES must be true or false")
+		}
+		allowSelfAssignRoles = parsed
+	}
+
 	cfg := AppConfig{
-		Port:       strings.TrimSpace(os.Getenv("PORT")),
-		VendorURLs: strings.TrimSpace(os.Getenv("VENDOR_URLS")),
+		Port:                     strings.TrimSpace(os.Getenv("PORT")),
+		VendorURLs:               strings.TrimSpace(os.Getenv("VENDOR_URLS")),
+		JWTSigningKey:            strings.TrimSpace(os.Getenv("JWT_SIGNING_KEY")),
+		AuthTokenTTL:             time.Duration(tokenTTLSeconds) * time.Second,
+		AuthAllowSelfAssignRoles: allowSelfAssignRoles,
 		DB: DBConfig{
 			URI:      strings.TrimSpace(os.Getenv("MONGODB_URI")),
 			Database: strings.TrimSpace(os.Getenv("MONGODB_DATABASE")),
@@ -46,6 +72,9 @@ func LoadFromEnv() (AppConfig, error) {
 	}
 	if cfg.VendorURLs == "" {
 		missing = append(missing, "VENDOR_URLS")
+	}
+	if cfg.JWTSigningKey == "" {
+		missing = append(missing, "JWT_SIGNING_KEY")
 	}
 
 	if len(missing) > 0 {

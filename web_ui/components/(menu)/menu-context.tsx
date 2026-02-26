@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -12,17 +11,11 @@ import {
   type ReactNode,
 } from "react";
 
-import type {
-  CartLine,
-  CreditsResponse,
-  GrantCreditsResponse,
-  ManagedMember,
-  MemberOrder,
-  MembersByDomainResponse,
-  MenuItem,
-  PlaceOrderResponse,
-  VendorMenu,
-} from "@/lib/menu-data";
+import {
+  clearSessionToken,
+  parseJwtClaims,
+  readSessionToken,
+} from "@/lib/auth-session";
 import {
   isEmailAllowedForDomains,
   isManagerRole,
@@ -30,6 +23,18 @@ import {
   parseAllowedEmailDomains,
   isValidDomain,
 } from "@/lib/auth-policy";
+import type {
+  AuthenticatedMember,
+  CartLine,
+  CreditsResponse,
+  GrantCreditsResponse,
+  ManagedMember,
+  MembersByDomainResponse,
+  MemberOrder,
+  MenuItem,
+  PlaceOrderResponse,
+  VendorMenu,
+} from "@/lib/menu-data";
 import { formatMoney, getApiErrorMessage } from "@/lib/menu-data";
 
 type MenuContextValue = {
@@ -72,6 +77,7 @@ type MenuContextValue = {
   grantCredits: () => Promise<boolean>;
   grantCreditsToMember: (targetMemberId: string, amount: number) => Promise<boolean>;
   lookupMembersByDomain: (domain: string) => Promise<ManagedMember[]>;
+  signOut: () => void;
 };
 
 type MenuProviderProps = {
@@ -84,30 +90,6 @@ const MenuContext = createContext<MenuContextValue | null>(null);
 function buildApiUrl(baseUrl: string, path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl}${normalizedPath}`;
-}
-
-type JwtClaims = {
-  sub?: string;
-  exp?: number;
-  role?: string;
-};
-
-function parseJwtClaims(token: string): JwtClaims | null {
-  const segments = token.split(".");
-  if (segments.length < 2) {
-    return null;
-  }
-
-  try {
-    const payload = segments[1];
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const decoded = atob(padded);
-    const claims = JSON.parse(decoded) as JwtClaims;
-    return claims;
-  } catch {
-    return null;
-  }
 }
 
 function withAuthHeader(token: string, headers?: HeadersInit): Headers {
@@ -144,38 +126,7 @@ async function requestJson<T,>(baseUrl: string, path: string, options?: RequestI
   return payload as T;
 }
 
-async function requestRelativeJson<T,>(path: string, options?: RequestInit): Promise<T> {
-  const headers = new Headers(options?.headers);
-  if (options?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const response = await fetch(path, {
-    ...options,
-    headers,
-  });
-
-  const text = await response.text();
-  let payload: unknown = null;
-  if (text) {
-    try {
-      payload = JSON.parse(text) as unknown;
-    } catch {
-      payload = text;
-    }
-  }
-
-  if (!response.ok) {
-    throw new Error(getApiErrorMessage(payload));
-  }
-
-  return payload as T;
-}
-
 export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
-  const { isLoaded, getToken } = useAuth();
-  const { isLoaded: isUserLoaded, user } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
   const allowedEmailDomains = useMemo(
     () => parseAllowedEmailDomains(process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS),
@@ -236,6 +187,14 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     setStatusMessage("");
   }, []);
 
+  const signOut = useCallback(() => {
+    clearSessionToken();
+    setSessionToken("");
+    setMemberId("");
+    setIsManager(false);
+    router.replace("/auth");
+  }, [router]);
+
   const refreshOrders = useCallback(
     async (targetMemberId: string, token: string, options?: { silent?: boolean }) => {
       if (!targetMemberId) {
@@ -248,7 +207,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       try {
         const payload = await requestJson<MemberOrder[]>(
           apiBaseUrl,
-          `/members/${encodeURIComponent(targetMemberId)}/orders`,
+          `/api/members/${encodeURIComponent(targetMemberId)}/orders`,
           {
             headers: withAuthHeader(token),
           },
@@ -273,7 +232,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       try {
         const payload = await requestJson<CreditsResponse>(
           apiBaseUrl,
-          `/members/${encodeURIComponent(targetMemberId)}/credits`,
+          `/api/members/${encodeURIComponent(targetMemberId)}/credits`,
           {
             headers: withAuthHeader(token),
           },
@@ -291,35 +250,42 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     [apiBaseUrl],
   );
 
-  const bootstrapApiData = useCallback(async (targetMemberId: string, token: string) => {
-    clearMessages();
-    setIsBootstrapping(true);
-    try {
-      const menusPayload = await requestJson<VendorMenu[]>(apiBaseUrl, "/menus");
+  const bootstrapApiData = useCallback(
+    async (targetMemberId: string, token: string) => {
+      clearMessages();
+      setIsBootstrapping(true);
+      try {
+        const menusPayload = await requestJson<VendorMenu[]>(apiBaseUrl, "/api/menus");
 
-      setMenus(menusPayload);
-      setSelectedVendorId(menusPayload[0]?.service_id ?? "");
+        setMenus(menusPayload);
+        setSelectedVendorId(menusPayload[0]?.service_id ?? "");
 
-      await Promise.all([
-        refreshCredits(targetMemberId, token),
-        refreshOrders(targetMemberId, token, { silent: true }),
-      ]);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not load API data.");
-    } finally {
-      setIsBootstrapping(false);
-    }
-  }, [apiBaseUrl, clearMessages, refreshCredits, refreshOrders]);
+        await Promise.all([
+          refreshCredits(targetMemberId, token),
+          refreshOrders(targetMemberId, token, { silent: true }),
+        ]);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Could not load API data.");
+      } finally {
+        setIsBootstrapping(false);
+      }
+    },
+    [apiBaseUrl, clearMessages, refreshCredits, refreshOrders],
+  );
 
   useEffect(() => {
     let isMounted = true;
 
-    const validateJwt = async () => {
-      if (!isLoaded || !isUserLoaded) {
+    const validateSession = async () => {
+      if (!apiBaseUrl) {
+        if (isMounted) {
+          setErrorMessage("Missing NEXT_PUBLIC_API_BASE_URL.");
+          setIsCheckingJwt(false);
+        }
         return;
       }
 
-      const token = await getToken();
+      const token = readSessionToken();
       if (!token) {
         if (isMounted) {
           setIsCheckingJwt(false);
@@ -328,29 +294,17 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
         return;
       }
 
-      const emailAddress = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? "";
-      const hasRestrictedDomains = allowedEmailDomains.length > 0;
-      if (
-        hasRestrictedDomains &&
-        (!emailAddress || !isEmailAllowedForDomains(emailAddress, allowedEmailDomains))
-      ) {
-        if (isMounted) {
-          setIsCheckingJwt(false);
-        }
-        await signOut({ redirectUrl: "/auth?error=EMAIL_DOMAIN_NOT_ALLOWED" });
-        return;
-      }
-
       const claims = parseJwtClaims(token);
       if (!claims?.sub) {
+        clearSessionToken();
         if (isMounted) {
-          setErrorMessage("Session token is missing a valid member id (sub claim).");
           setIsCheckingJwt(false);
         }
+        router.replace("/auth");
         return;
       }
-
       if (claims.exp && claims.exp <= Math.floor(Date.now() / 1000)) {
+        clearSessionToken();
         if (isMounted) {
           setIsCheckingJwt(false);
         }
@@ -358,24 +312,50 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
         return;
       }
 
-      if (isMounted) {
-        setSessionToken(token);
-        setMemberId(claims.sub);
-        const managerRole = isManagerRole(claims.role);
-        setIsManager(managerRole);
-        if (!managerRole) {
-          setViewMode("menu");
+      try {
+        const profile = await requestJson<AuthenticatedMember>(apiBaseUrl, "/api/auth/me", {
+          headers: withAuthHeader(token),
+          cache: "no-store",
+        });
+
+        const emailAddress = profile.email?.toLowerCase() ?? "";
+        if (
+          allowedEmailDomains.length > 0 &&
+          (!emailAddress || !isEmailAllowedForDomains(emailAddress, allowedEmailDomains))
+        ) {
+          clearSessionToken();
+          if (isMounted) {
+            setIsCheckingJwt(false);
+          }
+          router.replace("/auth?error=EMAIL_DOMAIN_NOT_ALLOWED");
+          return;
         }
-        setIsCheckingJwt(false);
+
+        if (isMounted) {
+          setSessionToken(token);
+          setMemberId(profile.member_id || claims.sub || "");
+          const managerRole = isManagerRole(profile.role || claims.role);
+          setIsManager(managerRole);
+          if (!managerRole) {
+            setViewMode("menu");
+          }
+          setIsCheckingJwt(false);
+        }
+      } catch {
+        clearSessionToken();
+        if (isMounted) {
+          setIsCheckingJwt(false);
+        }
+        router.replace("/auth");
       }
     };
 
-    void validateJwt();
+    void validateSession();
 
     return () => {
       isMounted = false;
     };
-  }, [allowedEmailDomains, getToken, isLoaded, isUserLoaded, router, signOut, user]);
+  }, [allowedEmailDomains, apiBaseUrl, router]);
 
   useEffect(() => {
     if (!memberId || !sessionToken) {
@@ -436,7 +416,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     setPlacingOrder(true);
 
     try {
-      const responsePayload = await requestJson<PlaceOrderResponse>(apiBaseUrl, "/orders", {
+      const responsePayload = await requestJson<PlaceOrderResponse>(apiBaseUrl, "/api/orders", {
         method: "POST",
         headers: withAuthHeader(sessionToken),
         body: JSON.stringify({
@@ -491,7 +471,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       try {
         const payload = await requestJson<GrantCreditsResponse>(
           apiBaseUrl,
-          `/members/${encodeURIComponent(targetMemberId)}/credits`,
+          `/api/members/${encodeURIComponent(targetMemberId)}/credits`,
           {
             method: "POST",
             headers: withAuthHeader(sessionToken),
@@ -533,6 +513,10 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
         setErrorMessage("Only managers can access member management.");
         return [];
       }
+      if (!sessionToken) {
+        setErrorMessage("Session token is missing.");
+        return [];
+      }
 
       const normalizedDomain = normalizeDomain(domain);
       if (!normalizedDomain || !isValidDomain(normalizedDomain)) {
@@ -541,9 +525,13 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
       }
 
       try {
-        const payload = await requestRelativeJson<MembersByDomainResponse>(
-          `/api/management/members?domain=${encodeURIComponent(normalizedDomain)}`,
-          { cache: "no-store" },
+        const payload = await requestJson<MembersByDomainResponse>(
+          apiBaseUrl,
+          `/api/auth/members?domain=${encodeURIComponent(normalizedDomain)}`,
+          {
+            headers: withAuthHeader(sessionToken),
+            cache: "no-store",
+          },
         );
         const members = Array.isArray(payload.members) ? payload.members : [];
         setStatusMessage(`Loaded ${members.length} member(s) for ${payload.domain}.`);
@@ -553,7 +541,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
         return [];
       }
     },
-    [clearMessages, isManager],
+    [apiBaseUrl, clearMessages, isManager, sessionToken],
   );
 
   const value: MenuContextValue = {
@@ -596,6 +584,7 @@ export function MenuProvider({ children, apiBaseUrl }: MenuProviderProps) {
     grantCredits,
     grantCreditsToMember,
     lookupMembersByDomain,
+    signOut,
   };
 
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;

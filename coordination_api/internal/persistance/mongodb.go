@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"food_ordering_coordination_system/internal/domain"
@@ -16,6 +17,7 @@ const (
 	creditsCollection = "credits"
 	ordersCollection  = "orders"
 	eventsCollection  = "events"
+	usersCollection   = "users"
 )
 
 type MongoRepository struct {
@@ -49,6 +51,27 @@ func (r *MongoRepository) EnsureSchema(ctx context.Context) error {
 	})
 	if err != nil {
 		return fmt.Errorf("create events index: %w", err)
+	}
+
+	_, err = r.db.Collection(usersCollection).Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "member_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "email", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: bson.D{{Key: "email_domain", Value: 1}, {Key: "email", Value: 1}},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("create users indexes: %w", err)
 	}
 
 	return nil
@@ -175,6 +198,149 @@ type orderItemDocument struct {
 	Name     string  `bson:"name"`
 	Quantity int     `bson:"quantity"`
 	Price    float64 `bson:"price"`
+}
+
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func emailDomain(email string) string {
+	at := strings.LastIndex(email, "@")
+	if at == -1 || at == len(email)-1 {
+		return ""
+	}
+	return email[at+1:]
+}
+
+func (r *MongoRepository) CreateUser(user User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	email := normalizeEmail(user.Email)
+	now := time.Now().UTC()
+	if user.CreatedAt.IsZero() {
+		user.CreatedAt = now
+	}
+	user.UpdatedAt = now
+
+	_, err := r.db.Collection(usersCollection).InsertOne(ctx, bson.M{
+		"id":            user.UserID.String(),
+		"member_id":     user.MemberID.String(),
+		"email":         email,
+		"email_domain":  emailDomain(email),
+		"full_name":     strings.TrimSpace(user.FullName),
+		"role":          strings.ToUpper(strings.TrimSpace(user.Role)),
+		"password_hash": user.PasswordHash,
+		"created_at":    user.CreatedAt,
+		"updated_at":    user.UpdatedAt,
+	})
+	return err
+}
+
+func (r *MongoRepository) FindUserByEmail(email string) (User, bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var doc userDocument
+	err := r.db.Collection(usersCollection).
+		FindOne(ctx, bson.M{"email": normalizeEmail(email)}).
+		Decode(&doc)
+	if err == mongo.ErrNoDocuments {
+		return User{}, false, nil
+	}
+	if err != nil {
+		return User{}, false, err
+	}
+	user, err := doc.toUser()
+	if err != nil {
+		return User{}, false, err
+	}
+	return user, true, nil
+}
+
+func (r *MongoRepository) FindUserByMemberID(memberID uuid.UUID) (User, bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var doc userDocument
+	err := r.db.Collection(usersCollection).
+		FindOne(ctx, bson.M{"member_id": memberID.String()}).
+		Decode(&doc)
+	if err == mongo.ErrNoDocuments {
+		return User{}, false, nil
+	}
+	if err != nil {
+		return User{}, false, err
+	}
+	user, err := doc.toUser()
+	if err != nil {
+		return User{}, false, err
+	}
+	return user, true, nil
+}
+
+func (r *MongoRepository) ListUsersByEmailDomain(domain string) ([]User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := r.db.Collection(usersCollection).Find(
+		ctx,
+		bson.M{"email_domain": strings.ToLower(strings.TrimSpace(domain))},
+		options.Find().SetSort(bson.D{{Key: "email", Value: 1}}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	users := []User{}
+	for cursor.Next(ctx) {
+		var doc userDocument
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, err
+		}
+		user, err := doc.toUser()
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+type userDocument struct {
+	ID           string    `bson:"id"`
+	MemberID     string    `bson:"member_id"`
+	Email        string    `bson:"email"`
+	FullName     string    `bson:"full_name"`
+	Role         string    `bson:"role"`
+	PasswordHash string    `bson:"password_hash"`
+	CreatedAt    time.Time `bson:"created_at"`
+	UpdatedAt    time.Time `bson:"updated_at"`
+}
+
+func (d userDocument) toUser() (User, error) {
+	userID, err := uuid.Parse(d.ID)
+	if err != nil {
+		return User{}, fmt.Errorf("parse user id: %w", err)
+	}
+	memberID, err := uuid.Parse(d.MemberID)
+	if err != nil {
+		return User{}, fmt.Errorf("parse member id: %w", err)
+	}
+	return User{
+		UserID:       userID,
+		MemberID:     memberID,
+		Email:        d.Email,
+		FullName:     d.FullName,
+		Role:         d.Role,
+		PasswordHash: d.PasswordHash,
+		CreatedAt:    d.CreatedAt,
+		UpdatedAt:    d.UpdatedAt,
+	}, nil
 }
 
 // EventsByAggregate returns every event for the given aggregate, sorted by

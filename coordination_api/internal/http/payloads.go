@@ -72,6 +72,36 @@ type vendorResponse struct {
 	ServiceID string `json:"service_id"`
 }
 
+type registerRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	FullName string `json:"full_name"`
+	Role     string `json:"role,omitempty"`
+}
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type authUserResponse struct {
+	UserID   string `json:"user_id"`
+	MemberID string `json:"member_id"`
+	Email    string `json:"email"`
+	FullName string `json:"full_name"`
+	Role     string `json:"role"`
+}
+
+type authSessionResponse struct {
+	Token string           `json:"token"`
+	User  authUserResponse `json:"user"`
+}
+
+type membersByDomainResponse struct {
+	Domain  string             `json:"domain"`
+	Members []authUserResponse `json:"members"`
+}
+
 type errorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`

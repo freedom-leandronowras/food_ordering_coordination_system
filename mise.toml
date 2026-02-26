@@ -73,15 +73,11 @@ get_env_var() {
   awk -F= -v target="$key" '$1 == target {print substr($0, index($0, "=")+1)}' "$file" | tail -n 1 | sed -e 's/^"//' -e 's/"$//'
 }
 
-CLERK_PUBLISHABLE_KEY="$(get_env_var NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY "$WEB_ENV_FILE")"
-if [[ -z "$CLERK_PUBLISHABLE_KEY" ]]; then
-  echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY not found in $WEB_ENV_FILE" >&2
-  exit 1
-fi
+ALLOWED_EMAIL_DOMAINS="$(get_env_var NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS "$WEB_ENV_FILE")"
 
 docker build \
   -t food-web-ui:prod \
-  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$CLERK_PUBLISHABLE_KEY" \
+  --build-arg NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS="$ALLOWED_EMAIL_DOMAINS" \
   --build-arg NEXT_PUBLIC_API_BASE_URL="${WEB_API_BASE_URL}" \
   "$ROOT_DIR/web_ui"
 '''
@@ -129,16 +125,11 @@ get_env_var() {
   awk -F= -v target="$key" '$1 == target {print substr($0, index($0, "=")+1)}' "$file" | tail -n 1 | sed -e 's/^"//' -e 's/"$//'
 }
 
-CLERK_PUBLISHABLE_KEY="$(get_env_var NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY "$WEB_ENV_FILE")"
-CLERK_SECRET_KEY="$(get_env_var CLERK_SECRET_KEY "$WEB_ENV_FILE")"
 ALLOWED_EMAIL_DOMAINS="$(get_env_var NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS "$WEB_ENV_FILE")"
+JWT_SIGNING_KEY="$(get_env_var JWT_SIGNING_KEY "$WEB_ENV_FILE")"
 
-if [[ -z "$CLERK_PUBLISHABLE_KEY" ]]; then
-  echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY not found in $WEB_ENV_FILE" >&2
-  exit 1
-fi
-if [[ -z "$CLERK_SECRET_KEY" ]]; then
-  echo "CLERK_SECRET_KEY not found in $WEB_ENV_FILE" >&2
+if [[ -z "$JWT_SIGNING_KEY" ]]; then
+  echo "JWT_SIGNING_KEY not found in $WEB_ENV_FILE" >&2
   exit 1
 fi
 
@@ -149,8 +140,7 @@ fi
   pulumi config set webImage "food-web-ui:prod" && \
   pulumi config set vendorImage "food-vendor-mocks:prod" && \
   pulumi config set imagePullPolicy "IfNotPresent" && \
-  pulumi config set --secret clerkPublishableKey "$CLERK_PUBLISHABLE_KEY" && \
-  pulumi config set --secret clerkSecretKey "$CLERK_SECRET_KEY" && \
+  pulumi config set --secret jwtSigningKey "$JWT_SIGNING_KEY" && \
   pulumi config set allowedEmailDomains "$ALLOWED_EMAIL_DOMAINS")
 '''
 
@@ -343,7 +333,7 @@ pnpm --dir "$WEB_DIR" exec concurrently -k \
   -n web,api,vendor-pizza,vendor-sushi,vendor-taco \
   -c cyan,magenta,yellow,blue,green \
   "cd '$WEB_DIR' && NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:${API_PORT} pnpm exec next dev --port ${WEB_PORT} --hostname 0.0.0.0" \
-  "cd '$API_DIR' && PORT=${API_PORT} MONGODB_URI=mongodb://127.0.0.1:${MONGO_PORT} MONGODB_DATABASE=${MONGO_DB} VENDOR_URLS='$VENDOR_URLS' air" \
+  "cd '$API_DIR' && PORT=${API_PORT} MONGODB_URI=mongodb://127.0.0.1:${MONGO_PORT} MONGODB_DATABASE=${MONGO_DB} VENDOR_URLS='$VENDOR_URLS' JWT_SIGNING_KEY='${JWT_SIGNING_KEY:-local-dev-signing-key}' AUTH_ALLOW_SELF_ASSIGN_ROLES='${AUTH_ALLOW_SELF_ASSIGN_ROLES:-true}' air" \
   "cd '$WEB_DIR' && pnpm exec json-server --host 127.0.0.1 --watch '$MOCKS_DIR/pizza_place_db.json' --port ${VENDOR_PIZZA_PORT}" \
   "cd '$WEB_DIR' && pnpm exec json-server --host 127.0.0.1 --watch '$MOCKS_DIR/sushi_bar_db.json' --port ${VENDOR_SUSHI_PORT}" \
   "cd '$WEB_DIR' && pnpm exec json-server --host 127.0.0.1 --watch '$MOCKS_DIR/taco_truck_db.json' --port ${VENDOR_TACO_PORT}"

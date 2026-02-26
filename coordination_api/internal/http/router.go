@@ -8,10 +8,31 @@ import (
 )
 
 func NewFoodOrderingRouter(service *domain.Service, aggregator *integration.Aggregator) http.Handler {
+	return NewFoodOrderingRouterWithAuth(service, aggregator, nil, DefaultJWTSigningKey)
+}
+
+func NewFoodOrderingRouterWithAuth(
+	service *domain.Service,
+	aggregator *integration.Aggregator,
+	authController *AuthController,
+	signingKey string,
+) http.Handler {
 	controller := NewFoodOrderingController(service, aggregator)
-	authenticator := NewAuthenticator()
+	authenticator := NewAuthenticator(signingKey)
 
 	mux := http.NewServeMux()
+
+	// Auth
+	if authController != nil {
+		mux.HandleFunc("POST /api/auth/register", authController.Register)
+		mux.HandleFunc("POST /api/auth/login", authController.Login)
+		mux.HandleFunc("GET /api/auth/me",
+			authenticator.RequireRoles(RoleMember, RoleHiveManager, RoleInnovationLead)(authController.Me),
+		)
+		mux.HandleFunc("GET /api/auth/members",
+			authenticator.RequireRoles(RoleHiveManager, RoleInnovationLead)(authController.ListMembersByDomain),
+		)
+	}
 
 	// Orders
 	mux.HandleFunc("POST /api/orders",

@@ -72,12 +72,12 @@ Stop the dev Mongo container when you no longer need it:
 mise run dev-local-stop
 ```
 
-## Required web auth values
+## Required auth values
 
 Root `mise.toml` task `deploy-local` reads these from `web_ui/.env.local` (or `WEB_ENV_FILE`):
 
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
+- `JWT_SIGNING_KEY`
+- `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS` (optional)
 
 ## Optional env overrides
 

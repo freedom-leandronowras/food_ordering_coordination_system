@@ -48,8 +48,7 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 		webAPIBaseURL = "http://127.0.0.1:18081"
 	}
 
-	clerkPublishableKey := cfg.RequireSecret("clerkPublishableKey")
-	clerkSecretKey := cfg.RequireSecret("clerkSecretKey")
+	jwtSigningKey := cfg.RequireSecret("jwtSigningKey")
 
 	allowedEmailDomains := cfg.Get("allowedEmailDomains")
 
@@ -62,16 +61,15 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 		return err
 	}
 
-	webSecretName := "web-ui-secrets"
-	webSecrets, err := corev1.NewSecret(ctx, webSecretName, &corev1.SecretArgs{
+	apiSecretName := "coordination-api-secrets"
+	apiSecrets, err := corev1.NewSecret(ctx, apiSecretName, &corev1.SecretArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Namespace: pulumi.String(namespaceName),
-			Name:      pulumi.String(webSecretName),
+			Name:      pulumi.String(apiSecretName),
 		},
 		Type: pulumi.String("Opaque"),
 		StringData: pulumi.StringMap{
-			"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": clerkPublishableKey,
-			"CLERK_SECRET_KEY":                  clerkSecretKey,
+			"JWT_SIGNING_KEY": jwtSigningKey,
 		},
 	}, pulumi.DependsOn([]pulumi.Resource{namespace}))
 	if err != nil {
@@ -169,10 +167,17 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 		ImagePullPolicy: imagePullPolicy,
 		ServiceType:     "ClusterIP",
 		Env: map[string]pulumi.StringInput{
-			"PORT":             pulumi.String("8080"),
-			"MONGODB_URI":      pulumi.String("mongodb://mongodb:27017"),
-			"MONGODB_DATABASE": pulumi.String("food_ordering"),
-			"VENDOR_URLS":      pulumi.String(vendorURLs),
+			"PORT":                         pulumi.String("8080"),
+			"MONGODB_URI":                  pulumi.String("mongodb://mongodb:27017"),
+			"MONGODB_DATABASE":             pulumi.String("food_ordering"),
+			"VENDOR_URLS":                  pulumi.String(vendorURLs),
+			"AUTH_ALLOW_SELF_ASSIGN_ROLES": pulumi.String("true"),
+		},
+		SecretEnv: map[string]constructs.SecretEnvVar{
+			"JWT_SIGNING_KEY": {
+				SecretName: apiSecretName,
+				Key:        "JWT_SIGNING_KEY",
+			},
 		},
 		ReadinessPath: "/api/vendors",
 		LivenessPath:  "/api/vendors",
@@ -181,6 +186,7 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 			pizzaVendor.Deployment,
 			sushiVendor.Deployment,
 			tacoVendor.Deployment,
+			apiSecrets,
 		},
 	})
 	if err != nil {
@@ -188,12 +194,10 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 	}
 
 	webEnv := map[string]pulumi.StringInput{
-		"PORT":                          pulumi.String("3000"),
-		"HOST":                          pulumi.String("0.0.0.0"),
-		"HOSTNAME":                      pulumi.String("0.0.0.0"),
-		"NEXT_PUBLIC_API_BASE_URL":      pulumi.String(webAPIBaseURL),
-		"NEXT_PUBLIC_CLERK_SIGN_IN_URL": pulumi.String("/auth"),
-		"NEXT_PUBLIC_CLERK_SIGN_UP_URL": pulumi.String("/auth?mode=sign-up"),
+		"PORT":                     pulumi.String("3000"),
+		"HOST":                     pulumi.String("0.0.0.0"),
+		"HOSTNAME":                 pulumi.String("0.0.0.0"),
+		"NEXT_PUBLIC_API_BASE_URL": pulumi.String(webAPIBaseURL),
 	}
 	if allowedEmailDomains != "" {
 		webEnv["NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS"] = pulumi.String(allowedEmailDomains)
@@ -209,21 +213,10 @@ func DeployLocalStack(ctx *pulumi.Context) error {
 		ImagePullPolicy: imagePullPolicy,
 		ServiceType:     "ClusterIP",
 		Env:             webEnv,
-		SecretEnv: map[string]constructs.SecretEnvVar{
-			"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": {
-				SecretName: webSecretName,
-				Key:        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-			},
-			"CLERK_SECRET_KEY": {
-				SecretName: webSecretName,
-				Key:        "CLERK_SECRET_KEY",
-			},
-		},
-		ReadinessPath: "/auth",
-		LivenessPath:  "/auth",
+		ReadinessPath:   "/auth",
+		LivenessPath:    "/auth",
 		DependsOn: []pulumi.Resource{
 			api.Deployment,
-			webSecrets,
 		},
 	})
 	if err != nil {

@@ -1,14 +1,29 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/auth(.*)"]);
+import { sessionCookieName } from "@/lib/auth-session";
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isPublicRoute(req)) {
-    return;
+function isPublicRoute(pathname: string) {
+  return pathname.startsWith("/auth");
+}
+
+export default function proxy(req: NextRequest) {
+  if (isPublicRoute(req.nextUrl.pathname)) {
+    return NextResponse.next();
   }
 
-  await auth.protect();
-});
+  const token = req.cookies.get(sessionCookieName)?.value;
+  if (token) {
+    return NextResponse.next();
+  }
+
+  const redirectUrl = req.nextUrl.clone();
+  redirectUrl.pathname = "/auth";
+  const relativePath = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+  if (relativePath.startsWith("/")) {
+    redirectUrl.searchParams.set("redirect_url", relativePath);
+  }
+  return NextResponse.redirect(redirectUrl);
+}
 
 export const config = {
   matcher: [

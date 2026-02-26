@@ -1,7 +1,5 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
-
 import { useMenuContext } from "@/components/(menu)/menu-context";
 import type { MenuSectionsData } from "@/components/(menu)/menu-section-types";
 import { Button } from "@/components/ui/button";
@@ -13,7 +11,8 @@ type HeaderSectionProps = {
 };
 
 export function HeaderSection({ data }: HeaderSectionProps) {
-  const { credits, memberId, isManager, viewMode, setViewMode, setShowGrantModal } = useMenuContext();
+  const { credits, memberId, isManager, viewMode, setViewMode, setShowGrantModal, signOut } =
+    useMenuContext();
 
   return (
     <Card className="rounded-2xl border-[#dce9e4] bg-white/95 px-4 py-3 backdrop-blur">
@@ -59,9 +58,9 @@ export function HeaderSection({ data }: HeaderSectionProps) {
               {data.addCreditsButtonLabel}
             </Button>
           ) : null}
-          <div className="rounded-full border border-[#dbe9e4] bg-white p-1">
-            <UserButton afterSignOutUrl="/auth" />
-          </div>
+          <Button type="button" variant="ghost" onClick={signOut}>
+            Sign out
+          </Button>
         </div>
       </div>
     </Card>

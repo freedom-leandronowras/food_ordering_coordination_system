@@ -56,11 +56,20 @@ export type ManagedMember = {
   member_id: string;
   email: string;
   full_name: string;
+  role: string;
 };
 
 export type MembersByDomainResponse = {
   domain: string;
   members: ManagedMember[];
+};
+
+export type AuthenticatedMember = {
+  user_id: string;
+  member_id: string;
+  email: string;
+  full_name: string;
+  role: string;
 };
 
 export function formatMoney(value: number) {

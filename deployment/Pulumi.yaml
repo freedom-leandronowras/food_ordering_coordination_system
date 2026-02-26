@@ -26,9 +26,6 @@ config:
   allowedEmailDomains:
     description: Optional CSV list for frontend auth domain restrictions
     default: ""
-  clerkPublishableKey:
-    description: Clerk publishable key for web-ui
-    secret: true
-  clerkSecretKey:
-    description: Clerk secret key for web-ui server/middleware
+  jwtSigningKey:
+    description: HMAC key used by coordination-api to sign and verify JWTs
     secret: true

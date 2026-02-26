@@ -26,7 +26,7 @@ const menuSectionsData: MenuSectionsData = {
     loadingText: "Loading menus from API...",
   },
   tray: {
-    title: "Your Tray",
+    title: "Shopping Cart",
     emptyText: "Your tray is looking empty.",
     reserveLabel: "Reserve Lunch",
     submittingLabel: "Submitting...",

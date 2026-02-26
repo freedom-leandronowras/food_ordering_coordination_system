@@ -17,11 +17,6 @@ const frontendEnvVariables: FrontendEnvVariable[] = [
     severity: "error",
   },
   {
-    name: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    value: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-    severity: "error",
-  },
-  {
     name: "NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS",
     value: process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS,
     severity: "warn",

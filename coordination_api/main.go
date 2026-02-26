@@ -45,9 +45,9 @@ func main() {
 	aggregator := buildAggregator(cfg.VendorURLs)
 
 	service := domain.NewFoodOrderingService(repo, repo, repo)
-	router := httpapi.NewFoodOrderingRouter(
-		service, aggregator,
-	)
+	authenticator := httpapi.NewAuthenticator(cfg.JWTSigningKey)
+	authController := httpapi.NewAuthController(repo, authenticator, cfg.AuthTokenTTL, cfg.AuthAllowSelfAssignRoles)
+	router := httpapi.NewFoodOrderingRouterWithAuth(service, aggregator, authController, cfg.JWTSigningKey)
 
 	log.Printf(
 		"api listening on :%s",

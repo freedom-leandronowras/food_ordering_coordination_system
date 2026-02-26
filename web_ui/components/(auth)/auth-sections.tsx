@@ -1,12 +1,14 @@
 "use client";
 
-import { SignIn, SignUp } from "@clerk/nextjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type FormEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { parseAllowedEmailDomains } from "@/lib/auth-policy";
+import { Input } from "@/components/ui/input";
+import { isEmailAllowedForDomains, parseAllowedEmailDomains } from "@/lib/auth-policy";
+import { parseJwtClaims, writeSessionToken } from "@/lib/auth-session";
+import { getApiErrorMessage } from "@/lib/menu-data";
 import { cn } from "@/lib/utils";
 
 export type AuthSectionsData = {
@@ -37,6 +39,13 @@ type AuthSectionsContextValue = {
   authErrorMessage: string;
 };
 
+type AuthSessionPayload = {
+  token: string;
+  user: {
+    email: string;
+  };
+};
+
 const AuthSectionsContext = createContext<AuthSectionsContextValue | null>(null);
 
 function getRedirectUrl(rawRedirect: string | null) {
@@ -46,11 +55,7 @@ function getRedirectUrl(rawRedirect: string | null) {
   return rawRedirect;
 }
 
-function getAuthErrorMessage(
-  rawError: string | null,
-  allowedDomains: string[],
-  blockedDomainMessage: string,
-) {
+function getAuthErrorMessage(rawError: string | null, allowedDomains: string[], blockedDomainMessage: string) {
   if (rawError !== "EMAIL_DOMAIN_NOT_ALLOWED") {
     return "";
   }
@@ -71,13 +76,33 @@ function useAuthSectionsContext() {
   return context;
 }
 
-function AuthSectionsProvider({
-  children,
-  data,
-}: {
-  children: ReactNode;
-  data: AuthSectionsData;
-}) {
+async function requestAuth<T,>(apiBaseUrl: string, path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const text = await response.text();
+  let payload: unknown = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text) as unknown;
+    } catch {
+      payload = text;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(getApiErrorMessage(payload));
+  }
+
+  return payload as T;
+}
+
+function AuthSectionsProvider({ children, data }: { children: ReactNode; data: AuthSectionsData }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -113,9 +138,7 @@ function AuthHeroSection({ data }: { data: AuthSectionsData }) {
   return (
     <section className="relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-[#d7ebe6] via-[#cce4de] to-[#bdd9d2] p-10 lg:flex lg:flex-col lg:justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1f6f64] text-white">
-          #
-        </div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1f6f64] text-white">#</div>
         <div>
           <p className="text-xl font-semibold text-[#123830]">{data.brand.name}</p>
           <p className="text-sm text-[#4d6e66]">{data.brand.tagline}</p>
@@ -137,33 +160,119 @@ function AuthHeroSection({ data }: { data: AuthSectionsData }) {
 }
 
 function AuthFormSection({ data }: { data: AuthSectionsData }) {
+  const router = useRouter();
   const { mode, setMode, redirectUrl, allowedDomains, authErrorMessage } = useAuthSectionsContext();
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-  const clerkAppearance = {
-    elements: {
-      card: "shadow-none border-0 bg-transparent p-0",
-      headerTitle: "text-2xl font-semibold text-[#123830]",
-      headerSubtitle: "text-[#5e7871]",
-      socialButtonsBlockButton:
-        "rounded-full border border-[#dce9e5] bg-white text-[#123830] hover:bg-[#f4f8f6]",
-      socialButtonsBlockButtonText: "font-medium",
-      dividerLine: "bg-[#dce9e5]",
-      dividerText: "text-[#7a908a]",
-      formFieldInput:
-        "rounded-full border border-[#dbe8e3] bg-[#f8fbfa] text-[#123830] focus:border-[#1f6f64] focus:ring-[#1f6f64]",
-      formButtonPrimary:
-        "rounded-full bg-[#1f6f64] hover:bg-[#17564d] text-white font-semibold",
-      footerActionLink: "text-[#1f6f64] hover:text-[#17564d]",
-    },
-  } as const;
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+
+  const [signUpName, setSignUpName] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpRole, setSignUpRole] = useState("MEMBER");
+
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const authBlockedMessage = useMemo(() => {
+    if (!apiBaseUrl) {
+      return "Missing NEXT_PUBLIC_API_BASE_URL. Configure the web environment.";
+    }
+    return "";
+  }, [apiBaseUrl]);
+
+  const completeAuth = (payload: AuthSessionPayload) => {
+    if (!payload.token) {
+      setError("Authentication response is missing the session token.");
+      return;
+    }
+
+    if (
+      allowedDomains.length > 0 &&
+      payload.user?.email &&
+      !isEmailAllowedForDomains(payload.user.email.toLowerCase(), allowedDomains)
+    ) {
+      setError(data.form.domainBlockedMessage);
+      return;
+    }
+
+    const claims = parseJwtClaims(payload.token);
+    if (!claims?.sub) {
+      setError("Session token is invalid.");
+      return;
+    }
+
+    writeSessionToken(payload.token);
+    router.replace(redirectUrl || "/");
+  };
+
+  const onSignIn = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("");
+    setError("");
+
+    if (!apiBaseUrl) {
+      setError("Missing NEXT_PUBLIC_API_BASE_URL.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = await requestAuth<AuthSessionPayload>(apiBaseUrl, "/api/auth/login", {
+        email: signInEmail,
+        password: signInPassword,
+      });
+      completeAuth(payload);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not sign in.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onSignUp = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("");
+    setError("");
+
+    if (!apiBaseUrl) {
+      setError("Missing NEXT_PUBLIC_API_BASE_URL.");
+      return;
+    }
+
+    if (
+      allowedDomains.length > 0 &&
+      signUpEmail &&
+      !isEmailAllowedForDomains(signUpEmail.toLowerCase(), allowedDomains)
+    ) {
+      setError(data.form.domainBlockedMessage);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = await requestAuth<AuthSessionPayload>(apiBaseUrl, "/api/auth/register", {
+        email: signUpEmail,
+        password: signUpPassword,
+        full_name: signUpName,
+        role: signUpRole,
+      });
+      setStatus("Account created. Redirecting...");
+      completeAuth(payload);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not create account.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <section className="w-full bg-white p-5 md:p-10 lg:w-[48%] lg:p-12">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-6 flex items-center gap-3 lg:hidden">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f6f64] text-white">
-            #
-          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f6f64] text-white">#</div>
           <div>
             <p className="text-lg font-semibold text-[#123830]">{data.brand.name}</p>
             <p className="text-xs text-[#5d7871]">{data.brand.tagline}</p>
@@ -196,26 +305,106 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
             </Card>
           ) : null}
 
+          {authBlockedMessage ? (
+            <Card className="mb-4 rounded-2xl border-[#f0d1cf] bg-[#fff6f5] p-3 text-sm text-[#8f352c]">
+              {authBlockedMessage}
+            </Card>
+          ) : null}
+
           {mode === "sign-up" && allowedDomains.length > 0 ? (
             <Card className="mb-4 rounded-2xl border-[#dce9e5] bg-[#eef7f4] p-3 text-xs text-[#4e6f66]">
               {data.form.allowedDomainsHint} {allowedDomains.map((domain) => `@${domain}`).join(", ")}.
             </Card>
           ) : null}
 
+          {status ? <p className="mb-3 text-sm text-[#235f56]">{status}</p> : null}
+          {error ? <p className="mb-3 text-sm text-[#8f352c]">{error}</p> : null}
+
           {mode === "sign-in" ? (
-            <SignIn
-              routing="virtual"
-              signUpUrl="/auth?mode=sign-up"
-              fallbackRedirectUrl={redirectUrl}
-              appearance={clerkAppearance}
-            />
+            <form className="space-y-3" onSubmit={onSignIn}>
+              <label className="block text-sm font-medium text-[#305a52]">
+                Email
+                <Input
+                  className="mt-1"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={signInEmail}
+                  onChange={(event) => setSignInEmail(event.target.value)}
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-[#305a52]">
+                Password
+                <Input
+                  className="mt-1"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={signInPassword}
+                  onChange={(event) => setSignInPassword(event.target.value)}
+                />
+              </label>
+
+              <Button type="submit" disabled={submitting || !apiBaseUrl} className="w-full">
+                {submitting ? "Signing in..." : data.form.signInLabel}
+              </Button>
+            </form>
           ) : (
-            <SignUp
-              routing="virtual"
-              signInUrl="/auth"
-              fallbackRedirectUrl={redirectUrl}
-              appearance={clerkAppearance}
-            />
+            <form className="space-y-3" onSubmit={onSignUp}>
+              <label className="block text-sm font-medium text-[#305a52]">
+                Full name
+                <Input
+                  className="mt-1"
+                  required
+                  autoComplete="name"
+                  value={signUpName}
+                  onChange={(event) => setSignUpName(event.target.value)}
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-[#305a52]">
+                Email
+                <Input
+                  className="mt-1"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={signUpEmail}
+                  onChange={(event) => setSignUpEmail(event.target.value)}
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-[#305a52]">
+                Password
+                <Input
+                  className="mt-1"
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  value={signUpPassword}
+                  onChange={(event) => setSignUpPassword(event.target.value)}
+                />
+              </label>
+
+              <label className="block text-sm font-medium text-[#305a52]">
+                Role
+                <select
+                  className="mt-1 w-full rounded-md border border-[#dbe8e3] bg-[#f8fbfa] px-3 py-2 text-sm text-[#123830]"
+                  value={signUpRole}
+                  onChange={(event) => setSignUpRole(event.target.value)}
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="HIVE_MANAGER">Hive Manager</option>
+                  <option value="INNOVATION_LEAD">Innovation Lead</option>
+                </select>
+              </label>
+
+              <Button type="submit" disabled={submitting || !apiBaseUrl} className="w-full">
+                {submitting ? "Creating account..." : data.form.signUpLabel}
+              </Button>
+            </form>
           )}
         </Card>
       </div>
