@@ -20,11 +20,11 @@ export function MainSection({ featured, items }: MainSectionProps) {
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-[28px] border-[#d6e7e1] bg-gradient-to-r from-[#123830] via-[#1b5b52] to-[#286e63] p-6 text-white">
+      <Card className="rounded-[28px] border-sl-d6e7e1 bg-gradient-to-r from-sl-123830 via-sl-1b5b52 to-sl-286e63 p-6 text-sl-ffffff">
         <h2 className="text-3xl font-semibold leading-tight md:text-4xl">
           {selectedVendor?.service_name ?? "Loading vendor..."}
         </h2>
-        <p className="mt-2 max-w-xl text-sm text-[#d4ebe5]">{featuredDescription}</p>
+        <p className="mt-2 max-w-xl text-sm text-sl-d4ebe5">{featuredDescription}</p>
       </Card>
 
       <Card className="p-4">
@@ -46,7 +46,7 @@ export function MainSection({ featured, items }: MainSectionProps) {
       <div className="space-y-3">
         <h3 className="text-2xl font-semibold md:text-3xl">{items.title}</h3>
         {isBootstrapping ? (
-          <Card className="p-5 text-sm text-[#607b74]">{items.loadingText}</Card>
+          <Card className="p-5 text-sm text-sl-607b74">{items.loadingText}</Card>
         ) : (
           <div className="space-y-3">
             {selectedVendor?.items.map((item) => (
@@ -54,10 +54,10 @@ export function MainSection({ featured, items }: MainSectionProps) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-semibold md:text-xl">{item.name}</p>
-                    <p className="mt-1 text-sm text-[#5a746d]">{item.description}</p>
+                    <p className="mt-1 text-sm text-sl-5a746d">{item.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-semibold text-[#1c5f54]">{formatMoney(item.price)}</p>
+                    <p className="text-xl font-semibold text-sl-1c5f54">{formatMoney(item.price)}</p>
                     <Button
                       type="button"
                       onClick={() => addToCart(selectedVendor?.service_name ?? "Vendor", item)}

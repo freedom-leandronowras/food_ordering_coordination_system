@@ -10,7 +10,7 @@ type AppShellProps = {
 
 export function AppShell({ header, sidebar, main, aside, mobileNav }: AppShellProps) {
   return (
-    <main className="min-h-screen bg-[#f3f7f5] px-4 pb-24 pt-4 text-[#123830] lg:px-8 lg:pb-8">
+    <main className="min-h-screen bg-sl-f3f7f5 px-4 pb-24 pt-4 text-sl-123830 lg:px-8 lg:pb-8">
       <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-5">
         {header}
 
@@ -23,7 +23,7 @@ export function AppShell({ header, sidebar, main, aside, mobileNav }: AppShellPr
         <section className="lg:hidden">{sidebar}</section>
       </div>
 
-      <nav className="fixed inset-x-4 bottom-4 z-30 rounded-2xl border border-[#dce9e5] bg-white p-2 shadow-lg lg:hidden">
+      <nav className="fixed inset-x-4 bottom-4 z-30 rounded-2xl border border-sl-dce9e5 bg-sl-ffffff p-2 shadow-lg lg:hidden">
         {mobileNav}
       </nav>
     </main>

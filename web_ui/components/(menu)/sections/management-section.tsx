@@ -94,7 +94,7 @@ export function ManagementSection({ data }: ManagementSectionProps) {
 
   if (!isManager) {
     return (
-      <Card className="rounded-3xl border-[#f0d1cf] bg-[#fff6f5] p-5 text-[#8f352c]">
+      <Card className="rounded-3xl border-sl-f0d1cf bg-sl-fff6f5 p-5 text-sl-8f352c">
         Manager access is required for domain member management.
       </Card>
     );
@@ -103,35 +103,35 @@ export function ManagementSection({ data }: ManagementSectionProps) {
   return (
     <>
       <div className="space-y-4">
-        <Card className="rounded-3xl border-[#dce9e5] p-5">
+        <Card className="rounded-3xl border-sl-dce9e5 p-5">
           <h2 className="text-2xl font-semibold">{data.title}</h2>
-          <p className="mt-2 text-sm text-[#5c746d]">{data.description}</p>
+          <p className="mt-2 text-sm text-sl-5c746d">{data.description}</p>
         </Card>
 
         {loadingMembers ? (
-          <Card className="rounded-3xl border-[#dce9e5] p-5 text-sm text-[#607b74]">Loading members...</Card>
+          <Card className="rounded-3xl border-sl-dce9e5 p-5 text-sm text-sl-607b74">Loading members...</Card>
         ) : null}
 
         {groupedMembers.length === 0 ? (
-          <Card className="rounded-3xl border-[#dce9e5] p-5 text-sm text-[#607b74]">{data.noResultsLabel}</Card>
+          <Card className="rounded-3xl border-sl-dce9e5 p-5 text-sm text-sl-607b74">{data.noResultsLabel}</Card>
         ) : (
           <div className="space-y-3">
             {groupedMembers.map((group) => (
-              <Card key={group.domain} className="rounded-3xl border-[#dce9e5] p-4">
-                <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#54726a]">@{group.domain}</p>
+              <Card key={group.domain} className="rounded-3xl border-sl-dce9e5 p-4">
+                <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-sl-54726a">@{group.domain}</p>
                 <div className="space-y-3">
                   {group.members.map((member) => (
                     <Card
                       key={member.user_id}
-                      className="flex flex-col gap-3 rounded-3xl border-[#dce9e5] p-4 lg:flex-row lg:items-end lg:justify-between"
+                      className="flex flex-col gap-3 rounded-3xl border-sl-dce9e5 p-4 lg:flex-row lg:items-end lg:justify-between"
                     >
                       <div>
-                        <p className="text-lg font-semibold text-[#1a4d45]">{member.full_name}</p>
-                        <p className="text-sm text-[#4f6f67]">{member.email}</p>
-                        <p className="mt-1 text-xs text-[#69827b]">
+                        <p className="text-lg font-semibold text-sl-1a4d45">{member.full_name}</p>
+                        <p className="text-sm text-sl-4f6f67">{member.email}</p>
+                        <p className="mt-1 text-xs text-sl-69827b">
                           {data.memberIdLabel}: {member.member_id}
                         </p>
-                        <p className="mt-1 text-xs font-semibold text-[#245f55]">
+                        <p className="mt-1 text-xs font-semibold text-sl-245f55">
                           Current Credits: {formatMoney(Number(member.credits ?? 0))}
                         </p>
                       </div>

@@ -136,25 +136,25 @@ function AuthSectionsProvider({ children, data }: { children: ReactNode; data: A
 
 function AuthHeroSection({ data }: { data: AuthSectionsData }) {
   return (
-    <section className="relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-[#d7ebe6] via-[#cce4de] to-[#bdd9d2] p-10 lg:flex lg:flex-col lg:justify-between">
+    <section className="relative hidden w-[52%] overflow-hidden bg-gradient-to-br from-sl-d7ebe6 via-sl-cce4de to-sl-bdd9d2 p-10 lg:flex lg:flex-col lg:justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1f6f64] text-white">#</div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">#</div>
         <div>
-          <p className="text-xl font-semibold text-[#123830]">{data.brand.name}</p>
-          <p className="text-sm text-[#4d6e66]">{data.brand.tagline}</p>
+          <p className="text-xl font-semibold text-sl-123830">{data.brand.name}</p>
+          <p className="text-sm text-sl-4d6e66">{data.brand.tagline}</p>
         </div>
       </div>
 
-      <Card className="mx-auto w-full max-w-[540px] rounded-[36px] border-0 bg-gradient-to-br from-[#1a5148] via-[#23665a] to-[#2b7367] p-8 text-white shadow-2xl">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#c8e6dd]">{data.hero.badge}</p>
+      <Card className="mx-auto w-full max-w-[540px] rounded-[36px] border-0 bg-gradient-to-br from-sl-1a5148 via-sl-23665a to-sl-2b7367 p-8 text-sl-ffffff shadow-2xl">
+        <p className="text-xs uppercase tracking-[0.18em] text-sl-c8e6dd">{data.hero.badge}</p>
         <h2 className="mt-4 text-4xl font-semibold leading-tight">{data.hero.title}</h2>
-        <p className="mt-3 max-w-sm text-sm text-[#d9eee8]">{data.hero.description}</p>
-        <div className="mt-8 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs">
+        <p className="mt-3 max-w-sm text-sm text-sl-d9eee8">{data.hero.description}</p>
+        <div className="mt-8 inline-flex items-center rounded-full bg-sl-ffffff/15 px-3 py-1 text-xs">
           {data.hero.availabilityLabel}
         </div>
       </Card>
 
-      {data.brand.versionLabel ? <p className="text-xs text-[#5e7c75]">{data.brand.versionLabel}</p> : null}
+      {data.brand.versionLabel ? <p className="text-xs text-sl-5e7c75">{data.brand.versionLabel}</p> : null}
     </section>
   );
 }
@@ -269,22 +269,22 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
   };
 
   return (
-    <section className="w-full bg-white p-5 md:p-10 lg:w-[48%] lg:p-12">
+    <section className="w-full bg-sl-ffffff p-5 md:p-10 lg:w-[48%] lg:p-12">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-6 flex items-center gap-3 lg:hidden">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f6f64] text-white">#</div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">#</div>
           <div>
-            <p className="text-lg font-semibold text-[#123830]">{data.brand.name}</p>
-            <p className="text-xs text-[#5d7871]">{data.brand.tagline}</p>
+            <p className="text-lg font-semibold text-sl-123830">{data.brand.name}</p>
+            <p className="text-xs text-sl-5d7871">{data.brand.tagline}</p>
           </div>
         </div>
 
-        <div className="mb-5 flex rounded-full bg-[#f2f7f5] p-1">
+        <div className="mb-5 flex rounded-full bg-sl-f2f7f5 p-1">
           <Button
             type="button"
             onClick={() => setMode("sign-in")}
             variant={mode === "sign-in" ? "default" : "ghost"}
-            className={cn("flex-1", mode === "sign-in" ? "" : "text-[#5e7871]")}
+            className={cn("flex-1", mode === "sign-in" ? "" : "text-sl-5e7871")}
           >
             {data.form.signInLabel}
           </Button>
@@ -292,37 +292,37 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
             type="button"
             onClick={() => setMode("sign-up")}
             variant={mode === "sign-up" ? "default" : "ghost"}
-            className={cn("flex-1", mode === "sign-up" ? "" : "text-[#5e7871]")}
+            className={cn("flex-1", mode === "sign-up" ? "" : "text-sl-5e7871")}
           >
             {data.form.signUpLabel}
           </Button>
         </div>
 
-        <Card className="rounded-3xl border-[#dce9e5] bg-[#fbfdfc] p-5">
+        <Card className="rounded-3xl border-sl-dce9e5 bg-sl-fbfdfc p-5">
           {authErrorMessage ? (
-            <Card className="mb-4 rounded-2xl border-[#f0d1cf] bg-[#fff6f5] p-3 text-sm text-[#8f352c]">
+            <Card className="mb-4 rounded-2xl border-sl-f0d1cf bg-sl-fff6f5 p-3 text-sm text-sl-8f352c">
               {authErrorMessage}
             </Card>
           ) : null}
 
           {authBlockedMessage ? (
-            <Card className="mb-4 rounded-2xl border-[#f0d1cf] bg-[#fff6f5] p-3 text-sm text-[#8f352c]">
+            <Card className="mb-4 rounded-2xl border-sl-f0d1cf bg-sl-fff6f5 p-3 text-sm text-sl-8f352c">
               {authBlockedMessage}
             </Card>
           ) : null}
 
           {mode === "sign-up" && allowedDomains.length > 0 ? (
-            <Card className="mb-4 rounded-2xl border-[#dce9e5] bg-[#eef7f4] p-3 text-xs text-[#4e6f66]">
+            <Card className="mb-4 rounded-2xl border-sl-dce9e5 bg-sl-eef7f4 p-3 text-xs text-sl-4e6f66">
               {data.form.allowedDomainsHint} {allowedDomains.map((domain) => `@${domain}`).join(", ")}.
             </Card>
           ) : null}
 
-          {status ? <p className="mb-3 text-sm text-[#235f56]">{status}</p> : null}
-          {error ? <p className="mb-3 text-sm text-[#8f352c]">{error}</p> : null}
+          {status ? <p className="mb-3 text-sm text-sl-235f56">{status}</p> : null}
+          {error ? <p className="mb-3 text-sm text-sl-8f352c">{error}</p> : null}
 
           {mode === "sign-in" ? (
             <form className="space-y-3" onSubmit={onSignIn}>
-              <label className="block text-sm font-medium text-[#305a52]">
+              <label className="block text-sm font-medium text-sl-305a52">
                 Email
                 <Input
                   className="mt-1"
@@ -334,7 +334,7 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
                 />
               </label>
 
-              <label className="block text-sm font-medium text-[#305a52]">
+              <label className="block text-sm font-medium text-sl-305a52">
                 Password
                 <Input
                   className="mt-1"
@@ -352,7 +352,7 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
             </form>
           ) : (
             <form className="space-y-3" onSubmit={onSignUp}>
-              <label className="block text-sm font-medium text-[#305a52]">
+              <label className="block text-sm font-medium text-sl-305a52">
                 Full name
                 <Input
                   className="mt-1"
@@ -363,7 +363,7 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
                 />
               </label>
 
-              <label className="block text-sm font-medium text-[#305a52]">
+              <label className="block text-sm font-medium text-sl-305a52">
                 Email
                 <Input
                   className="mt-1"
@@ -375,7 +375,7 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
                 />
               </label>
 
-              <label className="block text-sm font-medium text-[#305a52]">
+              <label className="block text-sm font-medium text-sl-305a52">
                 Password
                 <Input
                   className="mt-1"
@@ -388,10 +388,10 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
                 />
               </label>
 
-              <label className="block text-sm font-medium text-[#305a52]">
+              <label className="block text-sm font-medium text-sl-305a52">
                 Role
                 <select
-                  className="mt-1 w-full rounded-md border border-[#dbe8e3] bg-[#f8fbfa] px-3 py-2 text-sm text-[#123830]"
+                  className="mt-1 w-full rounded-md border border-sl-dbe8e3 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830"
                   value={signUpRole}
                   onChange={(event) => setSignUpRole(event.target.value)}
                 >
@@ -413,8 +413,8 @@ function AuthFormSection({ data }: { data: AuthSectionsData }) {
 
 function AuthPageSections({ data }: { data: AuthSectionsData }) {
   return (
-    <main className="min-h-screen bg-[#edf4f1] p-4 md:p-8">
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1280px] overflow-hidden rounded-[32px] border border-[#d7e7e1] bg-white shadow-xl">
+    <main className="min-h-screen bg-sl-edf4f1 p-4 md:p-8">
+      <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1280px] overflow-hidden rounded-[32px] border border-sl-d7e7e1 bg-sl-ffffff shadow-xl">
         <AuthHeroSection data={data} />
         <AuthFormSection data={data} />
       </div>

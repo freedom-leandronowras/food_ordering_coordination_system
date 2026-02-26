@@ -15,21 +15,21 @@ export function HeaderSection({ data }: HeaderSectionProps) {
     useMenuContext();
 
   return (
-    <Card className="rounded-2xl border-[#dce9e4] bg-white/95 px-4 py-3 backdrop-blur">
+    <Card className="rounded-2xl border-sl-dce9e4 bg-sl-ffffff/95 px-4 py-3 backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f6f64] text-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sl-1f6f64 text-sl-ffffff">
             #
           </div>
           <div>
             <p className="text-lg font-semibold leading-tight">{data.brandName}</p>
-            <p className="text-xs text-[#6e837c]">{data.subtitle}</p>
+            <p className="text-xs text-sl-6e837c">{data.subtitle}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {isManager ? (
-            <div className="flex items-center gap-2 rounded-full border border-[#dbe9e4] bg-white p-1">
+            <div className="flex items-center gap-2 rounded-full border border-sl-dbe9e4 bg-sl-ffffff p-1">
               <Button
                 type="button"
                 size="sm"
@@ -49,7 +49,7 @@ export function HeaderSection({ data }: HeaderSectionProps) {
             </div>
           ) : null}
 
-          <span className="rounded-full border border-[#dbe9e4] bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#245f55]">
+          <span className="rounded-full border border-sl-dbe9e4 bg-sl-edf7f3 px-3 py-1 text-xs font-semibold text-sl-245f55">
             Credits: {formatMoney(credits)}
           </span>
           {isManager ? (

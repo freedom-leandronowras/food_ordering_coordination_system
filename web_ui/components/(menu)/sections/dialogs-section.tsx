@@ -70,11 +70,11 @@ export function DialogsSection({ data }: DialogsSectionProps) {
             {cartLines.map((line) => (
               <Card
                 key={line.item.id}
-                className="flex items-center justify-between rounded-xl border-0 bg-[#f7fbf9] px-3 py-2"
+                className="flex items-center justify-between rounded-xl border-0 bg-sl-f7fbf9 px-3 py-2"
               >
                 <div>
                   <p className="font-medium">{line.item.name}</p>
-                  <p className="text-xs text-[#67827a]">
+                  <p className="text-xs text-sl-67827a">
                     {line.quantity}x - {line.vendorName}
                   </p>
                 </div>
@@ -83,20 +83,20 @@ export function DialogsSection({ data }: DialogsSectionProps) {
             ))}
           </div>
 
-          <Card className="mt-4 rounded-2xl border-0 bg-[#f5faf8] p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#67817a]">
+          <Card className="mt-4 rounded-2xl border-0 bg-sl-f5faf8 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sl-67817a">
               {data.confirm.paymentBreakdownLabel}
             </p>
             <div className="mt-2 flex items-center justify-between text-lg font-semibold">
               <span>{formatMoney(subtotal)} Total</span>
-              <span className="text-[#1f6f64]">
+              <span className="text-sl-1f6f64">
                 {totalPay === 0 ? "Fully Covered" : `${formatMoney(totalPay)} Pay`}
               </span>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-[#dfece7]">
-              <div className="h-2 rounded-full bg-[#2d6c60]" style={{ width: `${coverage}%` }} />
+            <div className="mt-2 h-2 rounded-full bg-sl-dfece7">
+              <div className="h-2 rounded-full bg-sl-2d6c60" style={{ width: `${coverage}%` }} />
             </div>
-            <p className="mt-1 text-xs text-[#607b74]">
+            <p className="mt-1 text-xs text-sl-607b74">
               Credits ({formatMoney(credits)}) applied, {coverage}% covered.
             </p>
           </Card>
@@ -162,7 +162,7 @@ export function DialogsSection({ data }: DialogsSectionProps) {
               value={grantReason}
               onChange={(event) => setGrantReason(event.target.value)}
               className={cn(
-                "mt-1 flex h-10 w-full rounded-2xl border border-[#d7e6e1] bg-[#f8fbfa] px-3 py-2 text-sm text-[#123830] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6f64]",
+                "mt-1 flex h-10 w-full rounded-2xl border border-sl-d7e6e1 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sl-1f6f64",
               )}
             >
               {data.grant.reasons.map((reason) => (
@@ -177,13 +177,13 @@ export function DialogsSection({ data }: DialogsSectionProps) {
               value={grantInternalNote}
               onChange={(event) => setGrantInternalNote(event.target.value)}
               className={cn(
-                "mt-1 h-24 w-full rounded-2xl border border-[#d7e6e1] bg-[#f8fbfa] px-3 py-2 text-sm text-[#123830] placeholder:text-[#7a908a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6f64]",
+                "mt-1 h-24 w-full rounded-2xl border border-sl-d7e6e1 bg-sl-f8fbfa px-3 py-2 text-sm text-sl-123830 placeholder:text-sl-7a908a focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sl-1f6f64",
               )}
               placeholder={data.grant.internalNotePlaceholder}
             />
           </label>
 
-          <Card className="mt-3 rounded-2xl border-0 bg-[#eef7f4] p-3 text-xs text-[#587771]">
+          <Card className="mt-3 rounded-2xl border-0 bg-sl-eef7f4 p-3 text-xs text-sl-587771">
             {data.grant.helperText}
           </Card>
 

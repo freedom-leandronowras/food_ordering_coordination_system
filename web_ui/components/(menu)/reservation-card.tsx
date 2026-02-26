@@ -12,11 +12,11 @@ type ReservationCardProps = {
 
 export function ReservationCard({ line, onIncrease, onDecrease }: ReservationCardProps) {
   return (
-    <Card className="rounded-2xl border-[#e2ece8] bg-[#f9fcfb] p-3">
+    <Card className="rounded-2xl border-sl-e2ece8 bg-sl-f9fcfb p-3">
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="font-semibold">{line.item.name}</p>
-          <p className="text-xs text-[#628078]">{line.vendorName}</p>
+          <p className="text-xs text-sl-628078">{line.vendorName}</p>
         </div>
         <p className="text-sm font-semibold">{formatMoney(line.item.price * line.quantity)}</p>
       </div>
