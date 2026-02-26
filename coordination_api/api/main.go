@@ -75,12 +75,6 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
-// buildAggregator creates the fan-in/fan-out aggregator and registers vendor
-// adapters from environment configuration.
-//
-// Set VENDOR_URLS to a comma-separated list of id=name=url triples:
-//
-//	VENDOR_URLS=pizza=Pizza Place=http://localhost:4001,sushi=Sushi Bar=http://localhost:4002
 func buildAggregator(raw string) *integration.Aggregator {
 	agg := integration.NewAggregator()
 	if strings.TrimSpace(raw) == "" {
